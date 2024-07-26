@@ -15,7 +15,7 @@ export default function Header() {
           </form>
           <ul className='flex gap-4'>
             <Link to='/sign-in'>
-            <li className='hover:underline'>Sign In</li>
+            <li className='hover:underline text-white'>Sign In</li>
             </Link>
           </ul>
         </div>

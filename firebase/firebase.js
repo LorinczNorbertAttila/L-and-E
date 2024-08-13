@@ -1,18 +1,19 @@
 import { initializeApp } from "firebase/app";
-import { getAuth} from "firebase/auth";
+import { getAuth, GoogleAuthProvider} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDZD_EvIzR2U0hsuHrBJfj4EHBGEVLKPgA",
-  authDomain: "l-e-webshop.firebaseapp.com",
-  databaseURL: "https://l-e-webshop-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "l-e-webshop",
-  storageBucket: "l-e-webshop.appspot.com",
-  messagingSenderId: "1034533686332",
-  appId: "1:1034533686332:web:22fc6a7348510661478739",
-  measurementId: "G-HHDPM58SND"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth();
 export const db = getFirestore(app);
+export const provider = new GoogleAuthProvider()

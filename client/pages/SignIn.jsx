@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { useAuth } from '../src/contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function SignIn() {
   const emailRef = useRef()
@@ -8,6 +8,7 @@ export default function SignIn() {
   const { login } = useAuth()
   const [error, setError] = useState('')
   const [loadig, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -16,8 +17,9 @@ export default function SignIn() {
       setError('')
       setLoading(true)
       await login(emailRef.current.value, passRef.current.value)
-    }catch{
-      setError('Intrarea în cont nereușită')
+      navigate("/")
+    }catch (error) {
+      setError('Crearea contului a fost nereușită: ' + error.message);
     }
 
     setLoading(false)

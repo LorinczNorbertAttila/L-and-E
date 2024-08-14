@@ -13,14 +13,17 @@ export default function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState()
   const [loading, setLoading] = useState(true)
 
-  async function  signup(email, password, name, lname){
+  async function createUser(email, name, lname){
     const docRef = await addDoc(collection(db, "users"), {
       email: email,
       first: name,
       last: lname,
     });
-    let create =  createUserWithEmailAndPassword(auth, email, password)
-    return create && docRef
+    return docRef
+  }
+
+  function signup(email, password){
+    return createUserWithEmailAndPassword(auth, email, password)
   }
 
   function login(email, password){
@@ -50,7 +53,7 @@ export default function AuthProvider({ children }) {
   
 
   const value = {
-    currentUser, signup, login, google_login, resetPassword, logout
+    currentUser, signup, createUser, login, google_login, resetPassword, logout
   }  
 
   return (

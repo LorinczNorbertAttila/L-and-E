@@ -26,7 +26,9 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-1 flex flex-col justify-center items-center sm:py-12">
-      <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      <Link to='/'>
+        <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
         <div

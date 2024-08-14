@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { useAuth } from '../src/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import ForgotPassword from './ForgotPassword';
 
 export default function SignIn() {
   const emailRef = useRef()
@@ -20,7 +19,19 @@ export default function SignIn() {
       await login(emailRef.current.value, passRef.current.value)
       navigate("/")
     }catch (error) {
-      setError('Intrarea în cont a fost nereușită: ' + error.message);
+      if (error.code === 'auth/wrong-password') {
+        setError('Parola introdusă este incorectă.');
+      } else if (error.code === 'auth/invalid-credential') {
+        setError('Credentialele sunt invalide.');
+      }else if (error.code === 'auth/user-not-found') {
+        setError('Adresa de email nu există.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Adresa de email nu este validă.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('Accesul la acest cont a fost temporar dezactivat din cauza prea multor încercări eșuate. Resetați parola sau încercați din nou mai târziu.');
+      }else {
+        setError('Autentificare eșuată: ' + error.message);
+      }
     }
 
     setLoading(false)
@@ -44,7 +55,9 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-1 flex flex-col justify-center items-center sm:py-12">
-      <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      <Link to='/'>
+        <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
         <div

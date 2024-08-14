@@ -8,7 +8,7 @@ export default function SignUp() {
   const emailRef = useRef()
   const passRef = useRef()
   const passConfRef = useRef()
-  const { signup } = useAuth()
+  const { signup, createUser } = useAuth()
   const [error, setError] = useState('')
   const [loadig, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -17,16 +17,25 @@ export default function SignUp() {
     e.preventDefault()
 
     if(passRef.current.value !== passConfRef.current.value){
-      return setError('Password do not match')
+      return setError('Parolele nu se potrivesc.')
     }
 
     try{
       setError('')
       setLoading(true)
-      await signup(emailRef.current.value, passRef.current.value, nameRef.current.value, lnameRef.current.value)
+      await signup(emailRef.current.value, passRef.current.value)
+      await createUser(emailRef.current.value, nameRef.current.value, lnameRef.current.value)
       navigate("/")
-    }catch{
-      setError('Crearea contului a fost nereușită')
+    }catch(error){
+      if (error.code === 'auth/email-already-in-use') {
+        setError('Această adresă de email este deja utilizată. Încercați cu altă adresă de email.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Adresa de email nu este validă.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Parola introdusă este prea slabă.');
+      } else {
+        setError('Crearea utilizatorului eșuată: ' + error.message);
+      }
     }
 
     setLoading(false)
@@ -34,7 +43,9 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-1 flex flex-col justify-center items-center sm:py-12">
-      <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      <Link to='/'>
+        <img src='src/images/lande.png' className='w-28 h-28 mb-12' alt='lande' />
+      </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
         <div
@@ -44,7 +55,7 @@ export default function SignUp() {
 
           <div className="max-w-md mx-auto">
             <div>
-              <h1 className="text-2xl font-semibold">Intră în cont</h1>
+              <h1 className="text-2xl font-semibold">Creare cont</h1>
             </div>
             <div className="divide-y divide-gray-200">
               <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">

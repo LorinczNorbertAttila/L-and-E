@@ -12,6 +12,7 @@ export default function App() {
   return  (
   <AuthProvider>
     <BrowserRouter>
+    {/*Routes */}
     <Routes>
       <Route path = "/" element={<Home/>} />
       <Route path = "/sign-in" element={<SignIn/>} />

@@ -13,7 +13,7 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth();
-export const db = getFirestore(app);
-export const provider = new GoogleAuthProvider()
+const app = initializeApp(firebaseConfig); //initialize Firebase
+export const auth = getAuth(); //object for use in authentication operations
+export const db = getFirestore(app); //Firestore database instance for use in database operations
+export const provider = new GoogleAuthProvider() //Google Auth Provider instance for use in Google sign-in operations

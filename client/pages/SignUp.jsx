@@ -9,7 +9,7 @@ export default function SignUp() {
   const emailRef = useRef()
   const passRef = useRef()
   const passConfRef = useRef()
-  const { signup, createUser } = useAuth()
+  const { signup} = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -27,9 +27,7 @@ export default function SignUp() {
       setError('') // Reset error message
       setLoading(true)
       // Attempt to sign up with email and password
-      await signup(emailRef.current.value, passRef.current.value)
-      // Create a user document in Firestore
-      await createUser(emailRef.current.value, nameRef.current.value, lnameRef.current.value)
+      await signup(emailRef.current.value, passRef.current.value, nameRef.current.value, lnameRef.current.value)
       // Redirect to home page
       navigate("/")
     } catch (error) {

@@ -1,76 +1,108 @@
-import React, { useContext, useState, useEffect } from 'react'
-import { auth, db, provider } from '../../../firebase/firebase'
-import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
-import { collection, addDoc } from "firebase/firestore"; 
+import React, { useContext, useState, useEffect } from 'react';
+import { auth, db, provider} from '../../../firebase/firebase';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"; 
 
 // Create a context for authentication
-const AuthContext = React.createContext()
+const AuthContext = React.createContext();
 
 // Custom hook to use the AuthContext
-export function useAuth(){
-    return useContext(AuthContext)
+export function useAuth() {
+  return useContext(AuthContext);
 }
 
 // Provider component to wrap the application and provide authentication context
 export default function AuthProvider({ children }) {
-  // State to keep track of the current user and loading status
-  const [currentUser, setCurrentUser] = useState()
-  const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Create new user
-  async function createUser(email, name, lname){
-    const docRef = await addDoc(collection(db, "users"), {
-      email: email,
+  // Create new user in Firestore
+  async function createUser(uid, email, name, lname) {
+    const userDocRef = doc(db, "users", uid);
+    return setDoc(userDocRef, {
+      email,
       first: name,
       last: lname,
+      createdAt: new Date(),
+      img: ''
     });
-    return docRef
   }
 
-  // Sign up a new user with email and password
-  function signup(email, password){
-    return createUserWithEmailAndPassword(auth, email, password)
+  // Sign up a new user and create Firestore document
+  async function signup(email, password, name, lname) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+    await createUser(uid, email, name, lname);
+    return userCredential;
   }
 
   // Login with email and password
-  function login(email, password){
-    return signInWithEmailAndPassword(auth, email, password)
+  async function login(email, password) {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+    // Fetch user data from Firestore and store it in currentUser
+    const userDoc = await getDoc(doc(db, "users", uid));
+    setCurrentUser({ ...userCredential.user, ...userDoc.data() });
+    return userCredential;
   }
 
-  //Login with Google authentication
-  function google_login(){
-    return signInWithPopup(auth, provider)
+  // Google login
+  async function google_login() {
+    const userCredential = await signInWithPopup(auth, provider);
+    const uid = userCredential.user.uid;
+    const userDoc = await getDoc(doc(db, "users", uid));
+    setCurrentUser({ ...userCredential.user, ...userDoc.data() });
+    return userCredential;
   }
 
-  // Send password reset email
-  function resetPassword(email){
-    return sendPasswordResetEmail(auth, email)
+  //Password reset
+  function resetPassword(email) {
+    return sendPasswordResetEmail(auth, email);
   }
 
   // Logout
   function logout() {
-    return signOut(auth)
+    setCurrentUser(null);
+    return signOut(auth);
   }
 
-  // Effect hook to subscribe to authentication state changes
-  useEffect(() => {
-    const unsubscriber = auth.onAuthStateChanged(user => {
-        setCurrentUser(user)
-        setLoading(false) // Set loading to false when user state is determined
-    })
-    // Clean up subscription on component unmount
-    return unsubscriber
-  }, [])
-  
-  // Value to be provided to the context consumers
-  const value = {
-    currentUser, signup, createUser, login, google_login, resetPassword, logout
-  }  
+  // setField function that finds a document by id and updates a specific field with the given value
+  async function setField(collectionName, id, fieldName, value) {
+    const docRef = doc(db, collectionName, id);
+    await updateDoc(docRef, {
+      [fieldName]: value, 
+    });
+  }
 
-  // Render the context provider with children
+  // Subscribe to authentication state changes
+  useEffect(() => {
+    const unsubscriber = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // Fetch user data from Firestore and store it in currentUser
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        setCurrentUser({ ...user, ...userDoc.data() });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+    return unsubscriber;
+  }, []);
+
+  const value = {
+    currentUser,
+    setCurrentUser,
+    signup,
+    login,
+    google_login,
+    logout,
+    resetPassword,
+    setField,
+  };
+
   return (
     <AuthContext.Provider value={value}>
-        {!loading && children} {/* Render children only if loading is complete */}
+      {!loading && children}
     </AuthContext.Provider>
-  )
-}  
+  );
+}

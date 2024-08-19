@@ -1,7 +1,12 @@
+import React, { useEffect, useState } from 'react'
 import {FaSearch} from 'react-icons/fa'
 import {Link} from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext';
+import { User, ShoppingBasket } from 'lucide-react';
 
 export default function Header() {
+  const {currentUser} = useAuth()
+    
   return (
     <header className='bg-teal-800 bg-opacity-85 shadow-md'>
         <div className='flex justify-between items-center max-w-6x1 mx-auto px-3'>
@@ -14,8 +19,19 @@ export default function Header() {
             <FaSearch className='text-teal-800'/>
           </form>
           <ul className='flex gap-4'>
-            <Link to='/sign-in'>
-            <li className='hover:underline text-white'>Sign In</li>
+            <Link to='/profile'>
+            {currentUser ? (
+              <img
+                className='rounded-full h-7 w-7 object-cover'
+                src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
+                alt='profile'
+              />
+              ) : (
+                <li className='hover:underline text-white flex items-center gap-1'> <User /> Autentificare</li>
+              )}
+            </Link>
+            <Link to = '/about'>
+            <li className='hover:underline text-white flex items-center gap-1'> <ShoppingBasket /> Coșul meu </li>
             </Link>
           </ul>
         </div>

@@ -21,10 +21,11 @@ export default function AuthProvider({ children }) {
     const userDocRef = doc(db, "users", uid);
     return setDoc(userDocRef, {
       email,
-      first: name,
-      last: lname,
+      name: lname + ' ' + name,
       createdAt: new Date(),
-      img: ''
+      img: '',
+      tel: '',
+      address: ''
     });
   }
 
@@ -48,12 +49,33 @@ export default function AuthProvider({ children }) {
 
   // Google login
   async function google_login() {
+    // Sign in with Google
     const userCredential = await signInWithPopup(auth, provider);
     const uid = userCredential.user.uid;
-    const userDoc = await getDoc(doc(db, "users", uid));
-    setCurrentUser({ ...userCredential.user, ...userDoc.data() });
+    const email = userCredential.user.email;
+    const displayName = userCredential.user.displayName;
+    const photoURL = userCredential.user.photoURL;
+    // Check if user already exists in Firestore
+    const userDocRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userDocRef);
+    // If user doesn't exist, create a new user in Firestore
+    if (!userDoc.exists()) {
+      setDoc(userDocRef, {
+        email,
+        name: displayName,
+        createdAt: new Date(),
+        img: photoURL,
+        tel: '',
+        address: ''
+      });
+    }
+    // Fetch the updated Firestore data and set it to currentUser
+    const updatedUserDoc = await getDoc(userDocRef);
+    setCurrentUser({...userCredential.user, ...updatedUserDoc.data()});
     return userCredential;
   }
+
+
 
   //Password reset
   function resetPassword(email) {

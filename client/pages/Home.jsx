@@ -1,45 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import Header from '../src/components/Header';
-import { db } from '../../firebase/firebase';
-import { collection, getDocs } from 'firebase/firestore';
-import { X, ShoppingCart } from 'lucide-react';
+import React, { useEffect, useState } from 'react'
+import Header from '../src/components/Header'
+import { useProduct } from '../src/contexts/ProductContext'
+import { X, ShoppingCart } from 'lucide-react'
+import { useCart } from '../src/contexts/CartContext'
+
 
 export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null); // State for the selected product
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const coll = collection(db, 'products');
-        const productSnapshot = await getDocs(coll);
-        const productList = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setProducts(productList); 
-      } catch (error) {
-        console.error("Error loading products: ", error);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  const { products, fetchProducts } = useProduct()
+  const [selectedProduct, setSelectedProduct] = useState(null) // State for the selected product
+  const { addToCart } = useCart()
 
   // Function to close the modal
   const closeModal = () => {
-    setSelectedProduct(null);
-  };
+    setSelectedProduct(null)
+  }
 
   // Function to prevent modal from opening when clicking the Shopping Cart button
-  const handleCartClick = (e) => {
-    e.stopPropagation(); // Prevent click event from propagating to the card
-    console.log("Product added to cart!");
-  };
+  const handleCartClick = (e, product, mass, price) => {
+    e.stopPropagation() // Prevent click event from propagating to the card
+    addToCart(product.id, mass, price)
+  }
 
   // Function to close the modal when clicking outside of it
   const handleModalBackgroundClick = (e) => {
     if (e.target === e.currentTarget) { // If the click is on the background, close the modal
-      closeModal();
+      closeModal()
     }
-  };
+  }
 
   return (
     <>
@@ -47,33 +34,31 @@ export default function Home() {
       <div className="min-h-screen bg-gray-100 p-4">
         <div className="flex flex-wrap justify-start gap-4">
           {products.map(product => (
-            product.mass.map((mass, index) => (
               <div 
-                key={`${product.id}-${index}`} 
-                className="bg-white rounded-md shadow-md overflow-hidden p-4 cursor-pointer"
-                style={{ width: '300px' }}
+                key={product.id} 
+                className="bg-white rounded-md shadow-md overflow-hidden p-4 cursor-pointer w-64"
                 onClick={() => setSelectedProduct({ 
                   ...product, 
-                  selectedMass: mass, 
-                  selectedPrice: product.price[index], 
-                  selectedQuantity: product.quantity[index] 
+                  selectedMass: product.mass, 
+                  selectedPrice: product.price, 
+                  selectedQuantity: product.quantity 
                 })} // Select the product and its details
               >
                 <img className="w-full" src={product.imageUrl || ''} alt={product.name} />
                 <div className="relative px-6 py-4">
                   <h2 className="text-lg font-bold leading-tight text-gray-900">{product.name}</h2>
                   <p className="mt-2 text-gray-600">{product.type}</p>
-                  <p className="mt-2 text-gray-600">{mass} g</p>
-                  <p className="mt-2 text-teal-800 font-bold">{product.price[index]} RON</p>
+                  <p className="mt-2 text-gray-600">{product.mass} g</p>
+                  <p className="mt-2 text-teal-800 font-bold">{product.price} RON</p>
                   <button 
-                    onClick={handleCartClick} // Don't open modal when clicking this button
+                    onClick={(e) => handleCartClick(e, product, product.mass, product.price)} // Don't open modal when clicking this button
                     className='absolute bottom-2 right-2 bg-green-100 px-2 py-1 rounded hover:bg-teal-600'>
                     <ShoppingCart className='text-teal-800'/>
                   </button>
                 </div>
               </div>
             ))
-          ))}
+          } 
         </div>
       </div>
 
@@ -89,10 +74,9 @@ export default function Home() {
             <p className="text-lg mb-2">Tip: {selectedProduct.type}</p>
             <p className="text-lg mb-2">Greutate: {selectedProduct.selectedMass} g</p>
             <p className="text-lg mb-2">Preț: {selectedProduct.selectedPrice} RON</p>
-            <p className="text-lg mb-2">Cantitate disponibilă: {selectedProduct.selectedQuantity} bucăți</p>
           </div>
         </div>
       )}
     </>
-  );
+  )
 }

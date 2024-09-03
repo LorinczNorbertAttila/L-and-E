@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { useAuth } from '../src/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react'
+import { useAuth } from '../src/contexts/AuthContext'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function SignUp() {
   // Refs to access the input fields
@@ -33,13 +33,13 @@ export default function SignUp() {
     } catch (error) {
       // Handle different errors
       if (error.code === 'auth/email-already-in-use') {
-        setError('Această adresă de email este deja utilizată. Încercați cu altă adresă de email.');
+        setError('Această adresă de email este deja utilizată. Încercați cu altă adresă de email.')
       } else if (error.code === 'auth/invalid-email') {
-        setError('Adresa de email nu este validă.');
+        setError('Adresa de email nu este validă.')
       } else if (error.code === 'auth/weak-password') {
-        setError('Parola introdusă este prea slabă.');
+        setError('Parola introdusă este prea slabă.')
       } else {
-        setError('Crearea utilizatorului eșuată: ' + error.message);
+        setError('Crearea utilizatorului eșuată: ' + error.message)
       }
     }
 

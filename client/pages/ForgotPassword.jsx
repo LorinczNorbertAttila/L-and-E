@@ -1,27 +1,27 @@
-import React, { useRef, useState } from 'react';
-import { useAuth } from '../src/contexts/AuthContext'; 
-import { Link, useNavigate } from 'react-router-dom'; 
+import React, { useRef, useState } from 'react'
+import { useAuth } from '../src/contexts/AuthContext' 
+import { Link, useNavigate } from 'react-router-dom' 
 
 export default function ForgotPassword() {
-  const emailRef = useRef(); 
-  const { resetPassword } = useAuth(); 
-  const [error, setError] = useState(''); 
-  const [loading, setLoading] = useState(false); 
-  const navigate = useNavigate(); 
+  const emailRef = useRef() 
+  const { resetPassword } = useAuth() 
+  const [error, setError] = useState('') 
+  const [loading, setLoading] = useState(false) 
+  const navigate = useNavigate() 
 
   async function handleSubmit(e) {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault() // Prevent default form submission behavior
 
     try {
-      setError(''); // Clear previous errors
-      setLoading(true); 
-      await resetPassword(emailRef.current.value); 
-      navigate("/sign-in"); // Navigate to sign-in page when resetting is successful
+      setError('') // Clear previous errors
+      setLoading(true) 
+      await resetPassword(emailRef.current.value) 
+      navigate("/sign-in") // Navigate to sign-in page when resetting is successful
     } catch (error) {
-      setError('Recuperarea parolei a fost nereușită: ' + error.message); // Error message
+      setError('Recuperarea parolei a fost nereușită: ' + error.message) // Error message
     }
 
-    setLoading(false);
+    setLoading(false)
   }
 
   return (
@@ -75,5 +75,5 @@ export default function ForgotPassword() {
         </form>
       </div>
     </div>
-  );
+  )
 }

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
-import { useAuth } from '../src/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../src/contexts/AuthContext'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function SignIn() {
   const emailRef = useRef()
@@ -24,17 +24,17 @@ export default function SignIn() {
     }catch (error) {
       // Handle different errors
       if (error.code === 'auth/wrong-password') {
-        setError('Parola introdusă este incorectă.');
+        setError('Parola introdusă este incorectă.')
       } else if (error.code === 'auth/invalid-credential') {
-        setError('Credentialele sunt invalide.');
+        setError('Credentialele sunt invalide.')
       }else if (error.code === 'auth/user-not-found') {
-        setError('Adresa de email nu există.');
+        setError('Adresa de email nu există.')
       } else if (error.code === 'auth/invalid-email') {
-        setError('Adresa de email nu este validă.');
+        setError('Adresa de email nu este validă.')
       } else if (error.code === 'auth/too-many-requests') {
-        setError('Accesul la acest cont a fost temporar dezactivat din cauza prea multor încercări eșuate. Resetați parola sau încercați din nou mai târziu.');
+        setError('Accesul la acest cont a fost temporar dezactivat din cauza prea multor încercări eșuate. Resetați parola sau încercați din nou mai târziu.')
       }else {
-        setError('Autentificare eșuată: ' + error.message);
+        setError('Autentificare eșuată: ' + error.message)
       }
     }
 
@@ -53,7 +53,7 @@ export default function SignIn() {
       // Redirect to home page 
       navigate("/")
     }catch (error) {
-      setError('Intrarea în cont a fost nereușită: ' + error.message);
+      setError('Intrarea în cont a fost nereușită: ' + error.message)
     }
 
     setLoading(false)

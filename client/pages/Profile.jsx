@@ -1,92 +1,91 @@
-import React, { useState } from 'react';
-import { useAuth } from '../src/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Header from '../src/components/Header';
-import { Pencil, X } from 'lucide-react';
+import React, { useState } from 'react'
+import { useAuth } from '../src/contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import Header from '../src/components/Header'
+import { Pencil, X } from 'lucide-react'
 
 export default function Profile() {
-  const { currentUser, logout, setField, setCurrentUser } = useAuth(); // Assuming you have a `setCurrentUser` method in `AuthContext`
-  const [error, setError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [addressError, setAddressError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [showAddressInput, setAddressInput] = useState(false);
-  const [county, setCounty] = useState('');
-  const [city, setCity] = useState('');
-  const [address, setAddress] = useState('');
-  const navigate = useNavigate();
+  const { currentUser, logout, setField, setCurrentUser } = useAuth()
+  const [error, setError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [addressError, setAddressError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [showPhoneInput, setShowPhoneInput] = useState(false)
+  const [showAddressInput, setAddressInput] = useState(false)
+  const [county, setCounty] = useState('')
+  const [city, setCity] = useState('')
+  const [address, setAddress] = useState('')
+  const navigate = useNavigate()
 
   // Function to handle logout
   async function handleLogout(e) {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      setError('');
-      setLoading(true);
-      await logout();
-      navigate("/");
+      setError('')
+      setLoading(true)
+      await logout()
+      navigate("/")
     } catch (error) {
-      setError(error.message);
+      setError(error.message)
     }
-    setLoading(false);
+    setLoading(false)
   }
 
   // Function to handle adding phone number
   async function handleTel(e) {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      setPhoneError('');  // Reset error message
-      setLoading(true);
-      await setField('users', currentUser.uid, 'tel', phoneNumber);  // Set the phone number
+      setPhoneError('')  // Reset error message
+      setLoading(true)
+      await setField('users', currentUser.uid, 'tel', phoneNumber)  // Set the phone number
 
       // Update the `currentUser` object locally to reflect the new phone number
       setCurrentUser({
         ...currentUser,
         tel: phoneNumber,  // Update the local user object with the new phone number
-      });
+      })
 
-      setShowPhoneInput(false);  // Hide the input field after saving
+      setShowPhoneInput(false)  // Hide the input field after saving
     } catch (error) {
-      setPhoneError("Failed to save phone number: " + error.message);  // Set error message if failed
+      setPhoneError("Failed to save phone number: " + error.message)  // Set error message if failed
     }
-    setLoading(false);
+    setLoading(false)
   }
 
   async function handleAddress(e) {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      setAddressError('');  // Reset error message
-      setLoading(true);
-      const fullAddress = address + " " + city + " " + county;
-      await setField('users', currentUser.uid, 'address', fullAddress);  // Set the address
+      setAddressError('')  // Reset error message
+      setLoading(true)
+      const fullAddress = address + " " + city + " " + county
+      await setField('users', currentUser.uid, 'address', fullAddress)  // Set the address
       // Update the `currentUser` object locally to reflect the new address
       setCurrentUser({
         ...currentUser,
         address: fullAddress,  // Update the local user object with the new address
-      });
+      })
 
-      setAddressInput(false);  // Hide the input field after saving
+      setAddressInput(false)  // Hide the input field after saving
     } catch (error) {
-      setAddressError("Failed to save address: " + error.message);  // Set error message if failed
+      setAddressError("Failed to save address: " + error.message)  // Set error message if failed
     }
-    setLoading(false);
+    setLoading(false)
   }
 
   // Function to show phone number input field
   function handleAddPhoneClick() {
-    setShowPhoneInput(true);
+    setShowPhoneInput(true)
   }
 
   const closeModal = () => {
-    setAddressInput(false);
+    setAddressInput(false)
   }
 
   return (
     <>
     <div>
       <Header />
-      {currentUser ? (
         <div className='min-h-screen bg-gray-100 py-1 flex flex-col items-center sm:py-12'>
           <div className="bg-white overflow-hidden shadow rounded-lg border item">
             <div className="px-4 py-5 sm:px-6">
@@ -115,9 +114,14 @@ export default function Profile() {
                           <input
                             type="tel"
                             value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            onChange={(e) => {
+                              const onlyNums = e.target.value.replace(/[^0-9]/g, '') // Numbers only
+                              if (onlyNums.length <= 10) { // Phone number length = 10
+                                setPhoneNumber(onlyNums)
+                              }
+                            }}
                             placeholder="Telefon"
-                            className="border rounded px-2 py-1 mt-2" 
+                            className="border rounded px-2 py-1" 
                           />
                           <button type="submit" className="bg-teal-800 text-white rounded-md px-2 py-1 ml-2">
                             Modifică
@@ -161,9 +165,6 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      ) : (
-        <div>No user!</div>
-      )}
     </div>
 
     {/*Modal*/}
@@ -195,5 +196,5 @@ export default function Profile() {
       </div>
       )}
     </>
-  );
+  )
 }

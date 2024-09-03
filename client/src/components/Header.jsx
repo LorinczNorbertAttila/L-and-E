@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import {FaSearch} from 'react-icons/fa'
 import {Link} from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext';
-import { User, ShoppingBasket } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'
+import { User, ShoppingBasket } from 'lucide-react'
 
 export default function Header() {
   const {currentUser} = useAuth()
@@ -30,7 +30,7 @@ export default function Header() {
                 <li className='hover:underline text-white flex items-center gap-1'> <User /> Autentificare</li>
               )}
             </Link>
-            <Link to = '/about'>
+            <Link to = '/cart'>
             <li className='hover:underline text-white flex items-center gap-1'> <ShoppingBasket /> Coșul meu </li>
             </Link>
           </ul>

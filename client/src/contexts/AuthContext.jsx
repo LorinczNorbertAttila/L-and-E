@@ -1,24 +1,24 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { auth, db, provider} from '../../../firebase/firebase';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"; 
+import React, { useContext, useState, useEffect } from 'react'
+import { auth, db, provider} from '../../../firebase/firebase'
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore" 
 
 // Create a context for authentication
-const AuthContext = React.createContext();
+const AuthContext = React.createContext()
 
 // Custom hook to use the AuthContext
 export function useAuth() {
-  return useContext(AuthContext);
+  return useContext(AuthContext)
 }
 
 // Provider component to wrap the application and provide authentication context
 export default function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   // Create new user in Firestore
   async function createUser(uid, email, name, lname) {
-    const userDocRef = doc(db, "users", uid);
+    const userDocRef = doc(db, "users", uid)
     return setDoc(userDocRef, {
       email,
       name: lname + ' ' + name,
@@ -26,38 +26,38 @@ export default function AuthProvider({ children }) {
       img: '',
       tel: '',
       address: ''
-    });
+    })
   }
 
   // Sign up a new user and create Firestore document
   async function signup(email, password, name, lname) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
-    await createUser(uid, email, name, lname);
-    return userCredential;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+    const uid = userCredential.user.uid
+    await createUser(uid, email, name, lname)
+    return userCredential
   }
 
   // Login with email and password
   async function login(email, password) {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    const uid = userCredential.user.uid
     // Fetch user data from Firestore and store it in currentUser
-    const userDoc = await getDoc(doc(db, "users", uid));
-    setCurrentUser({ ...userCredential.user, ...userDoc.data() });
-    return userCredential;
+    const userDoc = await getDoc(doc(db, "users", uid))
+    setCurrentUser({ ...userCredential.user, ...userDoc.data() })
+    return userCredential
   }
 
   // Google login
   async function google_login() {
     // Sign in with Google
-    const userCredential = await signInWithPopup(auth, provider);
-    const uid = userCredential.user.uid;
-    const email = userCredential.user.email;
-    const displayName = userCredential.user.displayName;
-    const photoURL = userCredential.user.photoURL;
+    const userCredential = await signInWithPopup(auth, provider)
+    const uid = userCredential.user.uid
+    const email = userCredential.user.email
+    const displayName = userCredential.user.displayName
+    const photoURL = userCredential.user.photoURL
     // Check if user already exists in Firestore
-    const userDocRef = doc(db, "users", uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = doc(db, "users", uid)
+    const userDoc = await getDoc(userDocRef)
     // If user doesn't exist, create a new user in Firestore
     if (!userDoc.exists()) {
       setDoc(userDocRef, {
@@ -67,33 +67,33 @@ export default function AuthProvider({ children }) {
         img: photoURL,
         tel: '',
         address: ''
-      });
+      })
     }
     // Fetch the updated Firestore data and set it to currentUser
-    const updatedUserDoc = await getDoc(userDocRef);
-    setCurrentUser({...userCredential.user, ...updatedUserDoc.data()});
-    return userCredential;
+    const updatedUserDoc = await getDoc(userDocRef)
+    setCurrentUser({...userCredential.user, ...updatedUserDoc.data()})
+    return userCredential
   }
 
 
 
   //Password reset
   function resetPassword(email) {
-    return sendPasswordResetEmail(auth, email);
+    return sendPasswordResetEmail(auth, email)
   }
 
   // Logout
   function logout() {
-    setCurrentUser(null);
-    return signOut(auth);
+    setCurrentUser(null)
+    return signOut(auth)
   }
 
   // setField function that finds a document by id and updates a specific field with the given value
   async function setField(collectionName, id, fieldName, value) {
-    const docRef = doc(db, collectionName, id);
+    const docRef = doc(db, collectionName, id)
     await updateDoc(docRef, {
       [fieldName]: value, 
-    });
+    })
   }
 
   // Subscribe to authentication state changes
@@ -101,15 +101,15 @@ export default function AuthProvider({ children }) {
     const unsubscriber = auth.onAuthStateChanged(async (user) => {
       if (user) {
         // Fetch user data from Firestore and store it in currentUser
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        setCurrentUser({ ...user, ...userDoc.data() });
+        const userDoc = await getDoc(doc(db, "users", user.uid))
+        setCurrentUser({ ...user, ...userDoc.data() })
       } else {
-        setCurrentUser(null);
+        setCurrentUser(null)
       }
-      setLoading(false);
-    });
-    return unsubscriber;
-  }, []);
+      setLoading(false)
+    })
+    return unsubscriber
+  }, [])
 
   const value = {
     currentUser,
@@ -120,11 +120,11 @@ export default function AuthProvider({ children }) {
     logout,
     resetPassword,
     setField,
-  };
+  }
 
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
-  );
+  )
 }

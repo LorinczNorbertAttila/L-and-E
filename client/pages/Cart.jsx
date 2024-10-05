@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import Header from '../src/components/Header'
 import { useCart } from '../src/contexts/CartContext'
+import { useAuth } from '../src/contexts/AuthContext'
 
 export default function Cart() {
-  const { cart, updateCartItemQuantity, removeFromCart } = useCart()
+  const { cart, updateCartItemQuantity, removeFromCart, placeOrder } = useCart()
+  const { currentUser } = useAuth()
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
@@ -17,11 +19,17 @@ export default function Cart() {
   const handleQuantityChange = (item, newQuantity) => {
     if (newQuantity === 0) {
       removeFromCart(item.product.id)
+      console.log(cart)
     } else if (newQuantity > item.quantity) {
       updateCartItemQuantity(item.product.id, 1)
     } else if (newQuantity < item.quantity) {
       updateCartItemQuantity(item.product.id, -1)
     }
+  }
+
+  const handlePlaceOrder = async () => {
+    await placeOrder(cart, total, currentUser?.uid)
+    alert("Comanda ta a fost plasată cu succes!")
   }
 
   return (
@@ -56,6 +64,19 @@ export default function Cart() {
             ))}
             <div className="text-right font-bold text-xl mt-4">
               Total: {total.toFixed(2)} RON
+            </div>
+            {currentUser ? (
+              <></>
+            ) : (
+              <></>
+            )}
+            <div className="flex justify-center items-center">
+              <button 
+              type="submit"
+              onClick={handlePlaceOrder}  
+              className="bg-teal-800 text-white rounded-md px-4 py-2">
+                Trimite comanda
+              </button>
             </div>
           </div>
         ) : (

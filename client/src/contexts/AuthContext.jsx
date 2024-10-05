@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react'
 import { auth, db, provider} from '../../../firebase/firebase'
 import { createUserWithEmailAndPassword, sendPasswordResetEmail, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore" 
+import { doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore" 
 
 // Create a context for authentication
 const AuthContext = React.createContext()
@@ -34,6 +34,19 @@ export default function AuthProvider({ children }) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     const uid = userCredential.user.uid
     await createUser(uid, email, name, lname)
+    // Move cart from localStorage to Firestore
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const cart = JSON.parse(savedCart).map(item => ({
+        productRef: doc(db, "products", item.product.id),
+        quantity: item.quantity
+      }));
+      const userDocRef = doc(db, "users", uid);
+      await updateDoc(userDocRef, {
+        cart: arrayUnion(...cart), // Add cart items to Firestore
+      });
+      localStorage.removeItem('cart'); // Delete cart from localStorage
+    }
     return userCredential
   }
 
@@ -41,6 +54,22 @@ export default function AuthProvider({ children }) {
   async function login(email, password) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password)
     const uid = userCredential.user.uid
+    // Merge cart items from localStorage with Firestore
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const cart = JSON.parse(savedCart).map(item => ({
+        productRef: doc(db, "products", item.product.id),
+        quantity: item.quantity
+      }));
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      const existingCart = userDoc.data().cart || [];
+      const mergedCart = [...existingCart, ...cart];
+      await updateDoc(userDocRef, {
+        cart: mergedCart,
+      });
+      localStorage.removeItem('cart');
+    }
     // Fetch user data from Firestore and store it in currentUser
     const userDoc = await getDoc(doc(db, "users", uid))
     setCurrentUser({ ...userCredential.user, ...userDoc.data() })
@@ -68,6 +97,22 @@ export default function AuthProvider({ children }) {
         tel: '',
         address: ''
       })
+    }
+    // Merge cart items from localStorage with Firestore
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const cart = JSON.parse(savedCart).map(item => ({
+        productRef: doc(db, "products", item.product.id),
+        quantity: item.quantity
+      }));
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      const existingCart = userDoc.data().cart || [];
+      const mergedCart = [...existingCart, ...cart];
+      await updateDoc(userDocRef, {
+        cart: mergedCart,
+      });
+      localStorage.removeItem('cart');
     }
     // Fetch the updated Firestore data and set it to currentUser
     const updatedUserDoc = await getDoc(userDocRef)

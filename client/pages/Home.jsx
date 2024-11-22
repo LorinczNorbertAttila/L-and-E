@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../src/components/Header'
 import { useProduct } from '../src/contexts/ProductContext'
-import { X, ShoppingCart } from 'lucide-react'
+import { X, ShoppingCart, BotMessageSquare } from 'lucide-react'
 import { useCart } from '../src/contexts/CartContext'
+import BotpressChat from '../cahtbots/BotPress'
+import TidioChat from '../cahtbots/Tidio'
+
 
 
 export default function Home() {
   const { products, fetchProducts } = useProduct()
   const [selectedProduct, setSelectedProduct] = useState(null) // State for the selected product
   const { addToCart } = useCart()
+  const [showChat, setShowChat] = useState(false)
 
   // Function to close the modal
   const closeModal = () => {
@@ -27,6 +31,8 @@ export default function Home() {
       closeModal()
     }
   }
+
+
 
   return (
     <>
@@ -60,6 +66,12 @@ export default function Home() {
             ))
           } 
         </div>
+      {/*   <BotpressChat/>
+        { <button 
+        onClick={() => setShowChat(!showChat)} 
+        className=' fixed bottom-4 right-4 bg-teal-800 p-4 rounded-full hover:bg-green-400'>
+          <BotMessageSquare className='' />
+        </button> } */}
       </div>
 
       {/* Modal */}
@@ -77,6 +89,33 @@ export default function Home() {
           </div>
         </div>
       )}
+
+
+        {/* Chat Window */}
+        <div 
+          className={`fixed bottom-0 right-4 bg-white shadow-lg rounded-t-lg w-80 p-4 transition-transform duration-300 
+          ${showChat ? 'translate-y-0' : 'translate-y-full'}`} 
+        >
+          <div className="flex justify-between items-center border-b pb-2 mb-2">
+            <h2 className="text-lg font-bold text-gray-800">Chat AI</h2>
+            <button 
+              onClick={() => setShowChat(false)} 
+              className="text-gray-600 hover:text-red-500"
+            >
+              <X />
+            </button>
+          </div>
+          <div className="h-48 overflow-y-auto">
+            <p className="text-sm text-gray-600">Hello! Hogyan segíthetek?</p>
+          </div>
+          <div className="mt-2">
+            <input 
+              type="text" 
+              placeholder="Írj üzenetet..." 
+              className="w-full border rounded px-2 py-1 focus:outline-none"
+            />
+          </div>
+        </div>
     </>
   )
 }

@@ -1,7 +1,12 @@
 import React, { useRef, useState } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@material-tailwind/react";
+import { Button, Alert } from "@material-tailwind/react";
+
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
 export default function ForgotPassword() {
   const emailRef = useRef();
@@ -13,10 +18,16 @@ export default function ForgotPassword() {
   async function handleSubmit(e) {
     e.preventDefault(); // Prevent default form submission behavior
 
+    if (!validateEmail(emailRef.current.value)) {
+      setError("Te rugăm să introduci o adresă de email validă.");
+      return;
+    }
+
     try {
       setError(""); // Clear previous errors
       setLoading(true);
       await resetPassword(emailRef.current.value);
+      alert("Email-ul de recuperare a fost trimis!"); // Alert message
       navigate("/sign-in"); // Navigate to sign-in page when resetting is successful
     } catch (error) {
       setError("Recuperarea parolei a fost nereușită: " + error.message); // Error message
@@ -52,6 +63,7 @@ export default function ForgotPassword() {
                       type="email"
                       ref={emailRef}
                       required
+                      onChange={() => setError("")}
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Email"
                     />
@@ -72,7 +84,7 @@ export default function ForgotPassword() {
                       Continuă
                     </Button>
                   </div>
-                  {error && <span className="text-red-600">{error}</span>}{" "}
+                  {error && <span className="text-red-600">{error}</span>}
                   {/* Display error message if there is one */}
                 </div>
               </div>

@@ -24,16 +24,20 @@ export default function Header() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Memoized calculation of the total number of items in the cart
+  const itemCount = React.useMemo(
+    () => cart.reduce((acc, item) => acc + item.quantity, 0),
+    [cart]
+  );
+
+  // Memoized calculation of the total price of items in the cart
+  const totalPrice = React.useMemo(
+    () =>
+      cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0),
+    [cart]
+  );
+
   useEffect(() => {
-    // Calculate the total number of items in the cart
-    const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-    // Calculate the total price of all items in the cart
-    const totalPrice = cart.reduce(
-      (acc, item) => acc + item.product.price * item.quantity,
-      0
-    );
-
     // Update the state with the new item count and total price
     setCartItemCount(itemCount);
     setCartTotalPrice(totalPrice);
@@ -76,7 +80,7 @@ export default function Header() {
             <Avatar
               src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
               size="sm"
-              alt="profile"
+              alt="profile_picture"
             />
             <ChevronDown
               strokeWidth={2.5}

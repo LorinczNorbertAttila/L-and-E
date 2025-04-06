@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Header from "../src/components/Header";
 import { useCart } from "../src/contexts/CartContext";
 import { useAuth } from "../src/contexts/AuthContext";
@@ -7,34 +7,40 @@ export default function Cart() {
   const { cart, updateCartItemQuantity, removeFromCart, placeOrder } =
     useCart();
   const { currentUser } = useAuth();
-  const [total, setTotal] = useState(0);
-
-  useEffect(() => {
-    const calculatedTotal = cart.reduce(
+  const [error, setError] = useState(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const total = useMemo(() => {
+    return cart.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
       0
     );
-    setTotal(calculatedTotal);
   }, [cart]);
 
   const handleQuantityChange = (item, newQuantity) => {
+    if (isNaN(newQuantity) || newQuantity < 0) return;
+    const difference = newQuantity - item.quantity;
     if (newQuantity === 0) {
       removeFromCart(item.product.id);
-      console.log(cart);
-    } else if (newQuantity > item.quantity) {
-      updateCartItemQuantity(item.product.id, 1);
-    } else if (newQuantity < item.quantity) {
-      updateCartItemQuantity(item.product.id, -1);
+    } else if (difference !== 0) {
+      updateCartItemQuantity(item.product.id, difference);
     }
   };
 
   const handlePlaceOrder = async () => {
-    await placeOrder(cart, total, currentUser?.uid);
-    alert("Comanda ta a fost plasată cu succes!");
+    setIsPlacingOrder(true);
+    try {
+      await placeOrder(cart, total, currentUser?.uid);
+      alert("Comanda ta a fost plasată cu succes!");
+    } catch (error) {
+      alert("A apărut o eroare la plasarea comenzii.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   return (
     <>
+      {error && <p className="text-red-500">{error}</p>}
       <header>
         <div className="flex flex-row p-4 gap-4 justify-center items-center" />
       </header>
@@ -65,41 +71,48 @@ export default function Cart() {
                     {item.product.price} RON
                   </p>
                 </div>
-                <form className="absolute right-4 p-4 self-end">
+                <div className="absolute right-4 p-4 self-end">
                   <div className="flex items-center">
-                    <label className="p-4">Cantitate: </label>
+                    <label
+                      htmlFor={`quantity-${item.product.id}`}
+                      className="p-4"
+                    >
+                      Cantitate:{" "}
+                    </label>
                     <input
-                      id="quantity"
+                      id={`quantity-${item.product.id}`}
                       type="number"
                       value={item.quantity}
                       onChange={(e) =>
                         handleQuantityChange(item, parseInt(e.target.value))
                       }
                       className="border rounded px-2 py-1 w-16"
+                      aria-label={`Set quantity for ${item.product.name}`}
                     />
                   </div>
-                </form>
+                </div>
               </div>
             ))}
             <div className="text-white text-right font-bold text-xl mt-4">
               Total: {total.toFixed(2)} RON
             </div>
-            {currentUser ? (
+            {currentUser && (
               <div className="flex justify-center items-center">
                 <button
                   type="submit"
                   onClick={handlePlaceOrder}
                   className="bg-teal-800 text-white rounded-md px-4 py-2"
+                  disabled={isPlacingOrder}
                 >
-                  Trimite comanda
+                  {isPlacingOrder ? "Se procesează..." : "Trimite comanda"}
                 </button>
               </div>
-            ) : (
-              <></>
             )}
           </div>
         ) : (
-          <p className="text-gray-600">Coșul tău este gol</p>
+          <p className="text-gray-600 text-center text-lg">
+            Coșul tău este gol
+          </p>
         )}
       </div>
     </>

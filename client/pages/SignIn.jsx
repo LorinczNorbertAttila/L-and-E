@@ -11,55 +11,60 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Function to handle form submission
-  async function handleSubmit(e) {
-    e.preventDefault();
+  const ERROR_MESSAGES = {
+    "auth/wrong-password": "Parola introdusă este incorectă.",
+    "auth/invalid-credential": "Credentialele sunt invalide.",
+    "auth/user-not-found": "Adresa de email nu există.",
+    "auth/invalid-email": "Adresa de email nu este validă.",
+    "auth/too-many-requests":
+      "Accesul la acest cont a fost temporar dezactivat din cauza prea multor încercări eșuate. Resetați parola sau încercați din nou mai târziu.",
+    "auth/popup-closed-by-user": "Fereastra de autentificare a fost închisă.",
+    "auth/cancelled-popup-request":
+      "Fereastra de autentificare a fost închisă.",
+    invalidEmail: "Adresa de email nu este validă.",
+    invalidPassword: "Parola trebuie să conțină cel puțin 6 caractere.",
+    default: "Autentificare eșuată: ",
+  };
 
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const handleAuth = async (authFunction, successRedirect) => {
     try {
-      setError(""); // Reset error message
+      setError("");
       setLoading(true);
-      // Attempt to log in with email and password
-      await login(emailRef.current.value, passRef.current.value);
-      // Redirect to home page
-      navigate("/");
+      await authFunction();
+      navigate(successRedirect);
     } catch (error) {
-      // Handle different errors
-      if (error.code === "auth/wrong-password") {
-        setError("Parola introdusă este incorectă.");
-      } else if (error.code === "auth/invalid-credential") {
-        setError("Credentialele sunt invalide.");
-      } else if (error.code === "auth/user-not-found") {
-        setError("Adresa de email nu există.");
-      } else if (error.code === "auth/invalid-email") {
-        setError("Adresa de email nu este validă.");
-      } else if (error.code === "auth/too-many-requests") {
-        setError(
-          "Accesul la acest cont a fost temporar dezactivat din cauza prea multor încercări eșuate. Resetați parola sau încercați din nou mai târziu."
-        );
-      } else {
-        setError("Autentificare eșuată: " + error.message);
-      }
+      const message =
+        ERROR_MESSAGES[error.code] || ERROR_MESSAGES.default + error.message;
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  async function handleSubmit(e) {
+    e.preventDefault(); // Prevent default form submission behavior
+    const email = emailRef.current.value;
+    const password = passRef.current.value;
+
+    // Validate email and password
+    if (!validateEmail(email)) {
+      setError(ERROR_MESSAGES.invalidEmail);
+      return;
+    }
+    if (password.length < 6) {
+      setError(ERROR_MESSAGES.invalidPassword);
+      return;
     }
 
-    setLoading(false);
+    // Attempt login
+    await handleAuth(() => login(email, password), "/");
   }
 
-  // Function to handle Google authentication
   async function handleGoogleAuth(e) {
     e.preventDefault();
-
-    try {
-      setError(""); // Reset error message
-      setLoading(true);
-      // Attempt to log in with Google
-      await google_login();
-      // Redirect to home page
-      navigate("/");
-    } catch (error) {
-      setError("Intrarea în cont a fost nereușită: " + error.message);
-    }
-
-    setLoading(false);
+    await handleAuth(google_login, "/");
   }
 
   return (
@@ -95,6 +100,9 @@ export default function SignIn() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Email"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="email"
@@ -114,6 +122,9 @@ export default function SignIn() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Password"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="password"
@@ -139,8 +150,12 @@ export default function SignIn() {
                       Am uitat parola
                     </Link>
                   </div>
-                  {/* Display error message if there is one */}
-                  {error && <span className="text-red-600">{error}</span>}
+                  {/* Display error message if there is one*/}
+                  {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -35,6 +35,23 @@ export default function AuthProvider({ children }) {
     });
   }
 
+  // Merge cart items from localStorage with Firestore
+  async function mergeCartWithFirestore(uid) {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      const cart = JSON.parse(savedCart).map((item) => ({
+        productRef: doc(db, "products", item.product.id),
+        quantity: item.quantity,
+      }));
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      const existingCart = userDoc.data().cart || [];
+      const mergedCart = [...existingCart, ...cart];
+      await updateDoc(userDocRef, { cart: mergedCart });
+      localStorage.removeItem("cart");
+    }
+  }
+
   // Sign up a new user and create Firestore document
   async function signup(email, password, name, lname) {
     const userCredential = await createUserWithEmailAndPassword(
@@ -44,19 +61,7 @@ export default function AuthProvider({ children }) {
     );
     const uid = userCredential.user.uid;
     await createUser(uid, email, name, lname);
-    // Move cart from localStorage to Firestore
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      const cart = JSON.parse(savedCart).map((item) => ({
-        productRef: doc(db, "products", item.product.id),
-        quantity: item.quantity,
-      }));
-      const userDocRef = doc(db, "users", uid);
-      await updateDoc(userDocRef, {
-        cart: arrayUnion(...cart), // Add cart items to Firestore
-      });
-      localStorage.removeItem("cart"); // Delete cart from localStorage
-    }
+    await mergeCartWithFirestore(uid); // Move cart from localStorage to Firestore
     return userCredential;
   }
 
@@ -68,22 +73,7 @@ export default function AuthProvider({ children }) {
       password
     );
     const uid = userCredential.user.uid;
-    // Merge cart items from localStorage with Firestore
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      const cart = JSON.parse(savedCart).map((item) => ({
-        productRef: doc(db, "products", item.product.id),
-        quantity: item.quantity,
-      }));
-      const userDocRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userDocRef);
-      const existingCart = userDoc.data().cart || [];
-      const mergedCart = [...existingCart, ...cart];
-      await updateDoc(userDocRef, {
-        cart: mergedCart,
-      });
-      localStorage.removeItem("cart");
-    }
+    await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
     // Fetch user data from Firestore and store it in currentUser
     const userDoc = await getDoc(doc(db, "users", uid));
     setCurrentUser({ ...userCredential.user, ...userDoc.data() });
@@ -112,22 +102,7 @@ export default function AuthProvider({ children }) {
         address: "",
       });
     }
-    // Merge cart items from localStorage with Firestore
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      const cart = JSON.parse(savedCart).map((item) => ({
-        productRef: doc(db, "products", item.product.id),
-        quantity: item.quantity,
-      }));
-      const userDocRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userDocRef);
-      const existingCart = userDoc.data().cart || [];
-      const mergedCart = [...existingCart, ...cart];
-      await updateDoc(userDocRef, {
-        cart: mergedCart,
-      });
-      localStorage.removeItem("cart");
-    }
+    await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
     // Fetch the updated Firestore data and set it to currentUser
     const updatedUserDoc = await getDoc(userDocRef);
     setCurrentUser({ ...userCredential.user, ...updatedUserDoc.data() });
@@ -145,23 +120,33 @@ export default function AuthProvider({ children }) {
     return signOut(auth);
   }
 
-  // setField function that finds a document by id and updates a specific field with the given value
+  // setField function that finds a document by id and updates a specific field (only if it's allowed) with the given value
   async function setField(collectionName, id, fieldName, value) {
+    const allowedCollections = ["users", "products"]; //Allowed collections
+    const allowedFields = ["tel", "address", "cart"]; //Allowed fields
+    if (!allowedCollections.includes(collectionName) || !allowedFields.includes(fieldName)) {
+      throw new Error("Unauthorized field or collection update");
+    }
     const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, {
-      [fieldName]: value,
-    });
+    await updateDoc(docRef, { [fieldName]: value });
   }
 
   // Subscribe to authentication state changes
   useEffect(() => {
     const unsubscriber = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Fetch user data from Firestore and store it in currentUser
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        setCurrentUser({ ...user, ...userDoc.data() });
+        const cachedUser = localStorage.getItem("currentUser");
+        if (cachedUser && JSON.parse(cachedUser).uid === user.uid) {
+          setCurrentUser(JSON.parse(cachedUser));
+        } else {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          const userData = { ...user, ...userDoc.data() };
+          setCurrentUser(userData);
+          localStorage.setItem("currentUser", JSON.stringify(userData));
+        }
       } else {
         setCurrentUser(null);
+        localStorage.removeItem("currentUser");
       }
       setLoading(false);
     });

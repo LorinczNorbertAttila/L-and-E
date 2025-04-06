@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../src/components/Header";
-import { Pencil, X } from "lucide-react";
+import { Pencil, Save, X } from "lucide-react";
 import {
   Button,
   IconButton,
@@ -16,6 +16,37 @@ import {
   Avatar,
 } from "@material-tailwind/react";
 import countiesData from "../src/assets/json/judete.json"; //Counties and cities json
+
+const ERROR_MESSAGES = {
+  selectCounty: "Vă rugăm să selectați un județ!",
+  selectCity: "Vă rugăm să selectați un oraș!",
+  saveAddressError: "Eroare la salvarea adresei",
+  invalidPhoneNumber: "Numărul de telefon trebuie să conțină exact 10 cifre.",
+  savePhoneError: "Nu s-a putut salva numărul de telefon: ",
+  invalidAddress: "Adresa trebuie să conțină cel puțin 5 caractere.",
+};
+
+function LocationSelector({ label, options, value, onChange, error, disabled }) {
+  return (
+    <div className="w-full sm:w-1/2 sm:pr-2">
+      <h2 className="mb-2 px-2">{label}</h2>
+      <Select
+        label={`Alege ${label.toLowerCase()}`}
+        onChange={onChange}
+        value={value}
+        className="w-full"
+        disabled={disabled}
+      >
+        {options.map((option, index) => (
+          <Option key={`${option.value}-${index}`} value={option.value}>
+            {option.label}
+          </Option>
+        ))}
+      </Select>
+      {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
+    </div>
+  );
+}
 
 export default function Profile() {
   const { currentUser, logout, setField, setCurrentUser } = useAuth();
@@ -33,12 +64,8 @@ export default function Profile() {
   const [cityError, setCityError] = useState("");
   const navigate = useNavigate();
 
-  const [countyOptions, setCountyOptions] = useState([]);
-  const [cityOptions, setCityOptions] = useState([]);
-
-  useEffect(() => {
-    // Load counties
-    const countyOptions = countiesData.judete.map((county) => ({
+  const countyOptions = useMemo(() => {
+    return countiesData.judete.map((county) => ({
       label: county.nume,
       value: county.nume,
       cities: county.localitati.map((city) => ({
@@ -46,8 +73,9 @@ export default function Profile() {
         value: city.nume,
       })),
     }));
-    setCountyOptions(countyOptions);
   }, []);
+
+  const [cityOptions, setCityOptions] = useState([]);
 
   useEffect(() => {
     // If the county changes, update the cities
@@ -57,6 +85,8 @@ export default function Profile() {
       setSelectedCity(null); // Reset city when county changes
     }
   }, [selectedCounty, countyOptions]);
+
+  const validatePhoneNumber = (number) => /^[0-9]{10}$/.test(number);
 
   // Function to handle logout
   async function handleLogout(e) {
@@ -78,6 +108,12 @@ export default function Profile() {
     try {
       setPhoneError(""); // Reset error message
       setLoading(true);
+
+      if (!validatePhoneNumber(phoneNumber)) {
+        setPhoneError(ERROR_MESSAGES.invalidPhoneNumber); // Set error message if phone number is invalid
+        return;
+      }
+
       await setField("users", currentUser.uid, "tel", phoneNumber); // Set the phone number
 
       // Update the `currentUser` object locally to reflect the new phone number
@@ -88,7 +124,7 @@ export default function Profile() {
 
       setShowPhoneInput(false); // Hide the input field after saving
     } catch (error) {
-      setPhoneError("Failed to save phone number: " + error.message); // Set error message if failed
+      setPhoneError(ERROR_MESSAGES.savePhoneError + error.message); // Set error message if failed
     }
     setLoading(false);
   }
@@ -96,39 +132,39 @@ export default function Profile() {
   //Function to handle address saving
   async function handleAddress(e) {
     e.preventDefault();
-    setCountyError(""); // Reset error message
-    setCityError(""); // Reset error message
-    setAddressError(""); // Reset error message
-    let isValid = true;
+    setCountyError("");
+    setCityError("");
+    setAddressError("");
+
     if (!selectedCounty) {
-      setCountyError("Vă rugăm să selectați un județ!");
-      isValid = false;
+      setCountyError(ERROR_MESSAGES.selectCounty);
+      return;
     }
     if (!selectedCity) {
-      setCityError("Vă rugăm să selectați un oraș!");
-      isValid = false;
+      setCityError(ERROR_MESSAGES.selectCity);
+      return;
     }
-    if (address.trim() === "") {
-      setAddressError("Vă rugăm să introduceți o adresă detaliată!");
-      isValid = false;
+    if (address.trim().length < 5) {
+      setAddressError(ERROR_MESSAGES.invalidAddress);
+      return;
     }
-    if (!isValid) return; // Ha bármelyik mező hibás, ne folytassuk
+
     try {
       setLoading(true);
-      const fullAddress =
-        address + ", " + selectedCity + ", jud." + selectedCounty;
-      await setField("users", currentUser.uid, "address", fullAddress); // Set the address
-      // Update the `currentUser` object locally to reflect the new address
-      setCurrentUser({
-        ...currentUser,
-        address: fullAddress, // Update the local user object with the new address
-      });
+      const fullAddress = `${address}, ${selectedCity}, jud. ${selectedCounty}`;
+      await setField("users", currentUser.uid, "address", fullAddress);
+      setCurrentUser({ ...currentUser, address: fullAddress });
+      setAddressInput(false);
 
-      setAddressInput(false); // Hide the input field after saving
+      // Reset the state values after saving
+      setSelectedCounty(null);
+      setSelectedCity(null);
+      setAddress("");
     } catch (error) {
-      setAddressError("Eroare la salvarea adresei: " + error.message); // Set error message if failed
+      setAddressError(ERROR_MESSAGES.saveAddressError + ": " + error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const closeModal = () => {
@@ -177,6 +213,8 @@ export default function Profile() {
                           type="tel"
                           value={phoneNumber}
                           onChange={(e) => {
+                            setPhoneError("");
+                            setLoading(false);
                             const onlyNums = e.target.value.replace(
                               /[^0-9]/g,
                               ""
@@ -194,7 +232,7 @@ export default function Profile() {
                         <Button
                           onClick={handleTel}
                           size="sm"
-                          disabled={!phoneNumber}
+                          disabled={!phoneNumber || loading}
                           className="!absolute right-1 top-1 rounded bg-teal-800 disabled:bg-gray-400"
                         >
                           Modifică
@@ -204,6 +242,7 @@ export default function Profile() {
                       <>
                         <span>{currentUser?.tel}</span>
                         <button
+                          data-testid="modify-phone"
                           onClick={() => setShowPhoneInput(true)}
                           className="text-teal-800 ml-6"
                         >
@@ -212,7 +251,9 @@ export default function Profile() {
                       </>
                     )}
                   </div>
-                  {phoneError && <p className="text-red-600 mt-2">{error}</p>}
+                  {phoneError && (
+                    <p className="text-red-600 mt-2">{phoneError}</p>
+                  )}
                 </dd>
               </div>
               <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -229,15 +270,14 @@ export default function Profile() {
                       </button>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       onClick={() => setAddressInput(true)}
                       className="bg-teal-800 text-white rounded-md px-2 py-1 ml-2"
                     >
                       Adaugă adresă
-                    </button>
+                    </Button>
                   )}
                 </dd>
-                {addressError && <p className="text-red-600 mt-2">{error}</p>}
               </div>
               <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <Button
@@ -258,9 +298,12 @@ export default function Profile() {
       <Dialog
         open={showAddressInput}
         handler={closeModal}
+        aria-labelledby="address-modal-title"
+        aria-describedby="address-modal-description"
         className="w-full max-w-xs sm:max-w-md"
       >
-        <DialogHeader>
+        <DialogHeader id="address-modal-title">
+          Adaugă Adresă
           <IconButton
             variant="text"
             onClick={closeModal}
@@ -269,51 +312,28 @@ export default function Profile() {
             <X />
           </IconButton>
         </DialogHeader>
-        <DialogBody>
+        <DialogBody id="address-modal-description">
           <form onSubmit={handleAddress} className="flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between">
-              <div className="w-full sm:w-1/2 sm:pr-2">
-                <h2 className="mb-2 px-2">Județ</h2>
-                <Select
-                  label="Alege județul"
-                  onChange={setSelectedCounty}
-                  className="w-full"
-                >
-                  {countyOptions.map((county, index) => (
-                    <Option
-                      key={`${county.value}-${index}`}
-                      value={county.value}
-                    >
-                      {county.label}
-                    </Option>
-                  ))}
-                </Select>
-                {countyError && (
-                  <p className="text-red-600 text-sm mt-1">{countyError}</p>
-                )}
-              </div>
-              <div className="w-full sm:w-1/2 sm:pl-2">
-                <h2 className="mb-2 px-2">Oraș</h2>
-                <Select
-                  key={selectedCounty}
-                  label="Alege orașul"
-                  onChange={setSelectedCity}
-                  className="w-full"
-                  disabled={!selectedCounty}
-                >
-                  {cityOptions.map((city, index) => (
-                    <Option key={`${city.value}-${index}`} value={city.value}>
-                      {city.label}
-                    </Option>
-                  ))}
-                </Select>
-                {cityError && (
-                  <p className="text-red-600 text-sm mt-1">{cityError}</p>
-                )}
-              </div>
+              <LocationSelector
+                label="Județ"
+                options={countyOptions}
+                onChange={setSelectedCounty}
+                error={countyError}
+              />
+              <LocationSelector
+                label="Oraș"
+                options={cityOptions}
+                onChange={setSelectedCity}
+                disabled={!selectedCounty}
+                error={cityError}
+              />
             </div>
-            <h2 className="mt-2 px-2">Adresă</h2>
+            <label htmlFor="address" className="mt-2 px-2">
+              Adresă
+            </label>
             <textarea
+              id="address"
               onChange={(e) => setAddress(e.target.value)}
               className="border rounded h-24 px-1 py-1 mt-2 flex-grow"
               style={{ resize: "none" }}
@@ -325,6 +345,7 @@ export default function Profile() {
               <Button
                 size="sm"
                 onClick={handleAddress}
+                disabled={loading}
                 className="bg-teal-800 text-white rounded-md"
               >
                 Salvează

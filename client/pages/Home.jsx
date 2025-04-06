@@ -27,32 +27,83 @@ import {
 import BotpressChat from "../chatbots/BotPress";
 import TidioChat from "../chatbots/Tidio";
 
+const WORKING_HOURS = {
+  weekdays: "Luni-vineri: 8:00-18:00",
+  saturday: "Sâmbătă: 8:00-12:00",
+  sunday: "Duminică: Închis",
+};
+
+//Custom navigation for the carousel
+const renderCarouselNavigation = ({ setActiveIndex, activeIndex, length }) => (
+  <div className="absolute bottom-4 left-2/4 z-50 flex -translate-x-2/4 gap-2">
+    {new Array(length).fill("").map((_, i) => (
+      <span
+        key={i}
+        className={`block h-1 cursor-pointer rounded-2xl transition-all ${
+          activeIndex === i ? "w-8 bg-white" : "w-4 bg-white/50"
+        }`}
+        onClick={() => setActiveIndex(i)}
+      />
+    ))}
+  </div>
+);
+
+//Modal for product details
+function ProductModal({ product, open, onClose }) {
+  return (
+    <Dialog
+      open={open}
+      handler={onClose}
+      aria-labelledby="modal-title"
+      aria-describedby="modal-description"
+    >
+      <DialogBody>
+        <IconButton
+          variant="text"
+          onClick={onClose}
+          className="!absolute top-2 right-2 text-teal-800"
+        >
+          <X />
+        </IconButton>
+        <h2 id="modal-title" className="text-2xl font-bold mb-4 text-center">
+          {product.name}
+        </h2>
+        <p className="text-lg mb-2">Tip: {product.type}</p>
+        <p className="text-lg mb-2">Greutate: {product.mass} g</p>
+        <p className="text-lg mb-2">Preț: {product.price} RON</p>
+      </DialogBody>
+    </Dialog>
+  );
+}
+
 export default function Home() {
-  const { products, fetchProducts } = useProduct();
+  const { products } = useProduct();
   const [selectedProduct, setSelectedProduct] = useState(null); // State for the selected product
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleOpen = (product) => {
-    setSelectedProduct({
-      ...product,
-      selectedMass: product.mass,
-      selectedPrice: product.price,
-      selectedQuantity: product.quantity,
-    });
+    setSelectedProduct(product);
     setOpen(true);
   };
 
   // Function to close the modal
   const closeModal = () => {
-    setOpen(!open);
+    setOpen(false);
   };
 
   // Function to prevent modal from opening when clicking the Shopping Cart button
-  const handleCartClick = (e, product, mass, price) => {
+  const handleCartClick = async (e, product, mass, price) => {
     e.stopPropagation(); // Prevent click event from propagating to the card
-    addToCart(product.id, mass, price);
+    setLoading(true);
+    await addToCart(product.id, mass, price);
+    setLoading(false);
+  };
+
+  const handleCartClickWrapper = (product) => (e) => {
+    handleCartClick(e, product, product.mass, product.price);
   };
 
   return (
@@ -89,63 +140,67 @@ export default function Home() {
       <Header />
       <div className="md:w-5/6 md:h-96 w-full h-56 mx-auto my-20">
         <Carousel
+          data-testid="image-carousel"
           autoplay={true}
-          autoplayDelay={10000}
+          autoplayDelay={5000}
           loop={true}
           className="rounded-xl overflow-hidden"
-          navigation={({ setActiveIndex, activeIndex, length }) => (
-            <div className="absolute bottom-4 left-2/4 z-50 flex -translate-x-2/4 gap-2">
-              {new Array(length).fill("").map((_, i) => (
-                <span
-                  key={i}
-                  className={`block h-1 cursor-pointer rounded-2xl transition-all content-[''] ${
-                    activeIndex === i ? "w-8 bg-white" : "w-4 bg-white/50"
-                  }`}
-                  onClick={() => setActiveIndex(i)}
-                />
-              ))}
-            </div>
-          )}
+          navigation={renderCarouselNavigation}
         >
-          <img src="../src/assets/images/fb_LandE.jpg" alt="image 1" className="h-full w-full object-contain md:object-cover" />
-          <img src="../src/assets/images/Parteneri.png" alt="image 2" className="h-full w-full object-contain bg-white bg-opacity-80" />
-          <img src="../src/assets/images/Carousel_LandE.png" alt="image 3" className="h-full w-full object-contain object-center bg-white bg-opacity-80" />
+          <img
+            src="../src/assets/images/fb_LandE.jpg"
+            alt="image 1"
+            className="h-full w-full object-contain md:object-cover"
+          />
+          <img
+            src="../src/assets/images/Parteneri.png"
+            alt="image 2"
+            className="h-full w-full object-contain bg-white bg-opacity-80"
+          />
+          <img
+            src="../src/assets/images/Carousel_LandE.png"
+            alt="image 3"
+            className="h-full w-full object-contain object-center bg-white bg-opacity-80"
+          />
         </Carousel>
       </div>
       <div className="flex flex-wrap md:justify-start justify-center p-10 gap-16 intersect ? animate-fade-up">
-        {products.map((product) => (
-          <Card
-            key={product.id}
-            className="bg-white bg-opacity-50 cursor-pointer md:w-64 w-48 h-auto"
-            onClick={() => handleOpen(product)} // Select the product and its details
-          >
-            <CardHeader className="md:h-48 h-32 flex justify-center">
-              <img
-                src={product.imageUrl || ""}
-                alt={product.name}
-                className="object-contain h-full"
-              />
-            </CardHeader>
-            <CardBody className="relative">
-              <h1 className="text-xl font-bold leading-tight text-gray-900">
-                {product.name}
-              </h1>
-              <p className="mt-2 text-gray-800">{product.type}</p>
-              <p className="mt-2 text-gray-800">{product.mass} g</p>
-              <p className="mt-2 text-teal-800 font-extrabold">
-                {product.price} RON
-              </p>
-              <IconButton
-                onClick={(e) =>
-                  handleCartClick(e, product, product.mass, product.price)
-                } // Don't open modal when clicking this button
-                className="!absolute bottom-2 right-2 bg-green-100 hover:bg-teal-600"
-              >
-                <ShoppingCart className="text-teal-800" />
-              </IconButton>
-            </CardBody>
-          </Card>
-        ))}
+        {products?.length > 0 ? (
+          products.map((product) => (
+            <Card
+              key={product.id}
+              className="bg-white bg-opacity-50 cursor-pointer md:w-64 w-48 h-auto"
+              onClick={() => handleOpen(product)} // Select the product and its details
+            >
+              <CardHeader className="md:h-48 h-32 flex justify-center">
+                <img
+                  src={product.imageUrl || ""}
+                  alt={product.name}
+                  className="object-contain h-full"
+                />
+              </CardHeader>
+              <CardBody className="relative">
+                <h1 className="text-xl font-bold leading-tight text-gray-900">
+                  {product.name}
+                </h1>
+                <p className="mt-2 text-gray-800">{product.type}</p>
+                <p className="mt-2 text-gray-800">{product.mass} g</p>
+                <p className="mt-2 text-teal-800 font-extrabold">
+                  {product.price} RON
+                </p>
+                <IconButton
+                  disabled={loading}
+                  onClick={handleCartClickWrapper(product)} // Don't open modal when clicking this button
+                  className="!absolute bottom-2 right-2 bg-green-100 hover:bg-teal-600"
+                >
+                  <ShoppingCart className="text-teal-800" />
+                </IconButton>
+              </CardBody>
+            </Card>
+          ))
+        ) : (
+          <p className="text-gray-600">Nu există produse disponibile.</p>
+        )}
       </div>
       {/*<BotpressChat/>*/}
       <footer className="bg-black">
@@ -178,24 +233,22 @@ export default function Home() {
                 </a>
               </div>
               <div className="flex flex-row gap-4 items-center justify-center md:justify-start">
-                <Facebook
-                  onClick={() =>
-                    window.open(
-                      "https://www.facebook.com/profile.php?id=100047988926318",
-                      "_blank"
-                    )
-                  }
+                <a
+                  href="https://www.facebook.com/profile.php?id=100047988926318"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-white cursor-pointer"
-                />
-                <MapPinned
-                  onClick={() =>
-                    window.open(
-                      "https://www.google.com/maps/place/Fitofarmacie+L%26E+AgroTeam+srl/@47.0328083,23.9118688,17z/data=!3m1!4b1!4m6!3m5!1s0x4749bd6fb2248211:0xadfe2fd24dd28334!8m2!3d47.0328083!4d23.9118688!16s%2Fg%2F11f6165fjn?entry=ttu&g_ep=EgoyMDI1MDMxOS4yIKXMDSoASAFQAw%3D%3D",
-                      "_blank"
-                    )
-                  }
+                >
+                  <Facebook />
+                </a>
+                <a
+                  href="https://www.google.com/maps/place/Fitofarmacie+L%26E+AgroTeam+srl/@47.0328083,23.9118688,17z/data=!3m1!4b1!4m6!3m5!1s0x4749bd6fb2248211:0xadfe2fd24dd28334!8m2!3d47.0328083!4d23.9118688!16s%2Fg%2F11f6165fjn?entry=ttu&g_ep=EgoyMDI1MDMxOS4yIKXMDSoASAFQAw%3D%3D"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-white cursor-pointer"
-                />
+                >
+                  <MapPinned />
+                </a>
               </div>
             </div>
             <div className="flex flex-col text-center md:text-left gap-4">
@@ -204,13 +257,13 @@ export default function Home() {
                 <Clock className="text-white rounded-full" />
                 <div>
                   <h2 className="text-white text-sm md:text-base">
-                    Luni-vineri: 8:00-18:00
+                    {WORKING_HOURS.weekdays}
                   </h2>
                   <h2 className="text-white text-sm md:text-base">
-                    Sâmbătă: 8:00-12:00
+                    {WORKING_HOURS.saturday}
                   </h2>
                   <h2 className="text-white text-sm md:text-base">
-                    Duminică: Închis
+                    {WORKING_HOURS.sunday}
                   </h2>
                 </div>
               </div>
@@ -221,27 +274,11 @@ export default function Home() {
 
       {/* Modal */}
       {selectedProduct && (
-        <Dialog open={open} handler={closeModal}>
-          <DialogBody>
-            <IconButton
-              variant="text"
-              onClick={closeModal}
-              className="!absolute top-2 right-2 text-teal-800"
-            >
-              <X />
-            </IconButton>
-            <h2 className="text-2xl font-bold mb-4 text-center">
-              {selectedProduct.name}
-            </h2>
-            <p className="text-lg mb-2">Tip: {selectedProduct.type}</p>
-            <p className="text-lg mb-2">
-              Greutate: {selectedProduct.selectedMass} g
-            </p>
-            <p className="text-lg mb-2">
-              Preț: {selectedProduct.selectedPrice} RON
-            </p>
-          </DialogBody>
-        </Dialog>
+        <ProductModal
+          product={selectedProduct}
+          open={open}
+          onClose={closeModal}
+        />
       )}
     </>
   );

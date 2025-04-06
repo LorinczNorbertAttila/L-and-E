@@ -15,43 +15,55 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const ERROR_MESSAGES = {
+    passwordsDoNotMatch: "Parolele nu se potrivesc.",
+    "auth/email-already-in-use": "Această adresă de email este deja utilizată.",
+    "auth/invalid-email": "Adresa de email nu este validă.",
+    "auth/weak-password": "Parola introdusă este prea slabă.",
+    invalidEmail: "Adresa de email nu este validă.",
+    invalidPassword: "Parola trebuie să conțină cel puțin 6 caractere.",
+    default: "Crearea utilizatorului eșuată: ",
+  };
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   // Function to handle form submission
   async function handleSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission behavior
+
+    const lname = lnameRef.current?.value || "";
+    const name = nameRef.current?.value || "";
+
+    // Validate email
+    if (!validateEmail(emailRef.current.value)) {
+      setError(ERROR_MESSAGES.invalidEmail);
+      return;
+    }
+
+    // Validate password length
+    if (passRef.current.value.length < 6) {
+      setError(ERROR_MESSAGES.invalidPassword);
+      return;
+    }
 
     // Check if passwords match
     if (passRef.current.value !== passConfRef.current.value) {
-      return setError("Parolele nu se potrivesc.");
+      return setError(ERROR_MESSAGES.passwordsDoNotMatch);
     }
 
     try {
       setError(""); // Reset error message
       setLoading(true);
-      // Attempt to sign up with email and password
-      await signup(
-        emailRef.current.value,
-        passRef.current.value,
-        nameRef.current.value,
-        lnameRef.current.value
-      );
-      // Redirect to home page
-      navigate("/");
+      // Attempt signup
+      await signup(emailRef.current.value, passRef.current.value, name, lname);
+      navigate("/"); // Redirect to home page
     } catch (error) {
-      // Handle different errors
-      if (error.code === "auth/email-already-in-use") {
-        setError(
-          "Această adresă de email este deja utilizată. Încercați cu altă adresă de email."
-        );
-      } else if (error.code === "auth/invalid-email") {
-        setError("Adresa de email nu este validă.");
-      } else if (error.code === "auth/weak-password") {
-        setError("Parola introdusă este prea slabă.");
-      } else {
-        setError("Crearea utilizatorului eșuată: " + error.message);
-      }
+      setError(
+        ERROR_MESSAGES[error.code] || ERROR_MESSAGES.default + error.message
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
@@ -87,6 +99,9 @@ export default function SignUp() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Lastname"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="lastname"
@@ -106,6 +121,9 @@ export default function SignUp() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Name"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="name"
@@ -125,6 +143,9 @@ export default function SignUp() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Email address"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="email"
@@ -144,6 +165,9 @@ export default function SignUp() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Password"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="password"
@@ -163,6 +187,9 @@ export default function SignUp() {
                       required
                       className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
                       placeholder="Password Confirmation"
+                      onChange={(e) => {
+                        setError("");
+                      }}
                     />
                     <label
                       htmlFor="password2"
@@ -183,7 +210,11 @@ export default function SignUp() {
                     </Button>
                   </div>
                   {/* Display error message if there is one*/}
-                  {error && <span className="text-red-600">{error}</span>}
+                  {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

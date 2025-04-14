@@ -127,6 +127,7 @@ export default function Header() {
             <div className="relative bg-teal-600 hover:bg-black w-20 h-20 rounded-3xl shadow-md flex flex-col items-center justify-center cursor-pointer">
               {/* Cart item count */}
               <div
+                data-testid="cart-item-count"
                 className={`absolute top-3 right-4 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full ${
                   animate ? "animate-jump animate-duration-[300ms]" : ""
                 }`}

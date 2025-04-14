@@ -86,6 +86,14 @@ export default function Cart() {
                       onChange={(e) =>
                         handleQuantityChange(item, parseInt(e.target.value))
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp") {
+                          handleQuantityChange(item, item.quantity + 1);
+                        }
+                        if (e.key === "ArrowDown") {
+                          handleQuantityChange(item, item.quantity - 1);
+                        }
+                      }}
                       className="border rounded px-2 py-1 w-16"
                       aria-label={`Set quantity for ${item.product.name}`}
                     />

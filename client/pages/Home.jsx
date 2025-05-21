@@ -189,11 +189,21 @@ export default function Home() {
                   {product.price} RON
                 </p>
                 <IconButton
-                  disabled={loading}
-                  onClick={handleCartClickWrapper(product)} // Don't open modal when clicking this button
-                  className="!absolute bottom-2 right-2 bg-green-100 hover:bg-teal-600"
+                  disabled={product.quantity === 0 || loading}
+                  onClick={handleCartClickWrapper(product)}
+                  className={`!absolute bottom-2 right-2 
+                    ${
+                      product.quantity === 0
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-green-100 hover:bg-teal-600"
+                    }
+                  `}
                 >
-                  <ShoppingCart className="text-teal-800" />
+                  <ShoppingCart
+                    className={`${
+                      product.quantity === 0 ? "text-gray-500" : "text-teal-800"
+                    }`}
+                  />
                 </IconButton>
               </CardBody>
             </Card>

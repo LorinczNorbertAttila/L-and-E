@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth, db, provider } from "../../../firebase/firebase";
+import { auth, provider } from "../../../firebase/firebase";
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -7,7 +7,7 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { useCart } from "../contexts/CartContext";
 
 // Create a context for authentication
 const AuthContext = React.createContext();
@@ -21,35 +21,57 @@ export function useAuth() {
 export default function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { refreshCart } = useCart();
 
   // Create new user in Firestore
-  async function createUser(uid, email, name, lname) {
-    const userDocRef = doc(db, "users", uid);
-    return setDoc(userDocRef, {
-      email,
-      name: lname + " " + name,
-      createdAt: new Date(),
-      img: "",
-      tel: "",
-      address: "",
+  async function createUser(uid, email, name, lname, photoURL) {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid, email, name, lname, photoURL }),
     });
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      throw new Error("User creation failed");
+    }
   }
 
   // Merge cart items from localStorage with Firestore
   async function mergeCartWithFirestore(uid) {
     const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      const cart = JSON.parse(savedCart).map((item) => ({
-        productRef: doc(db, "products", item.product.id),
-        quantity: item.quantity,
-      }));
-      const userDocRef = doc(db, "users", uid);
-      const userDoc = await getDoc(userDocRef);
-      const existingCart = userDoc.data().cart || [];
-      const mergedCart = [...existingCart, ...cart];
-      await updateDoc(userDocRef, { cart: mergedCart });
-      localStorage.removeItem("cart");
+    if (!savedCart) return;
+
+    const localCart = JSON.parse(savedCart);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/user/merge-cart`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, localCart }),
+      }
+    );
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "Failed to merge cart");
     }
+
+    localStorage.removeItem("cart");
+  }
+
+  //Post login initialization
+  async function postLoginInit(userCredential) {
+    const uid = userCredential.user.uid;
+    await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
+    await refreshCart(); // Refresh cart context
+    // Fetch user data from Firestore and store it in currentUser
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/user/profile/${uid}`
+    );
+    const result = await res.json();
+    setCurrentUser({ ...userCredential.user, ...result.data });
   }
 
   // Sign up a new user and create Firestore document
@@ -60,8 +82,8 @@ export default function AuthProvider({ children }) {
       password
     );
     const uid = userCredential.user.uid;
-    await createUser(uid, email, name, lname);
-    await mergeCartWithFirestore(uid); // Move cart from localStorage to Firestore
+    await createUser(uid, email, name, lname, "");
+    await postLoginInit(userCredential); // Initialize user data after signup
     return userCredential;
   }
 
@@ -72,11 +94,7 @@ export default function AuthProvider({ children }) {
       email,
       password
     );
-    const uid = userCredential.user.uid;
-    await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
-    // Fetch user data from Firestore and store it in currentUser
-    const userDoc = await getDoc(doc(db, "users", uid));
-    setCurrentUser({ ...userCredential.user, ...userDoc.data() });
+    await postLoginInit(userCredential); // Initialize user data after login
     return userCredential;
   }
 
@@ -89,23 +107,15 @@ export default function AuthProvider({ children }) {
     const displayName = userCredential.user.displayName;
     const photoURL = userCredential.user.photoURL;
     // Check if user already exists in Firestore
-    const userDocRef = doc(db, "users", uid);
-    const userDoc = await getDoc(userDocRef);
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/user/exists/${uid}`
+    );
+    const result = await res.json();
     // If user doesn't exist, create a new user in Firestore
-    if (!userDoc.exists()) {
-      setDoc(userDocRef, {
-        email,
-        name: displayName,
-        createdAt: new Date(),
-        img: photoURL,
-        tel: "",
-        address: "",
-      });
+    if (!!result.exists) {
+      await createUser(uid, email, displayName, "", photoURL);
     }
-    await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
-    // Fetch the updated Firestore data and set it to currentUser
-    const updatedUserDoc = await getDoc(userDocRef);
-    setCurrentUser({ ...userCredential.user, ...updatedUserDoc.data() });
+    await postLoginInit(userCredential); // Initialize user data after login
     return userCredential;
   }
 
@@ -122,13 +132,23 @@ export default function AuthProvider({ children }) {
 
   // setField function that finds a document by id and updates a specific field (only if it's allowed) with the given value
   async function setField(collectionName, id, fieldName, value) {
-    const allowedCollections = ["users", "products"]; //Allowed collections
-    const allowedFields = ["tel", "address", "cart"]; //Allowed fields
-    if (!allowedCollections.includes(collectionName) || !allowedFields.includes(fieldName)) {
-      throw new Error("Unauthorized field or collection update");
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/user/set-field`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          collection: collectionName,
+          id,
+          field: fieldName,
+          value,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to update field");
     }
-    const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, { [fieldName]: value });
   }
 
   // Subscribe to authentication state changes
@@ -139,8 +159,11 @@ export default function AuthProvider({ children }) {
         if (cachedUser && JSON.parse(cachedUser).uid === user.uid) {
           setCurrentUser(JSON.parse(cachedUser));
         } else {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const userData = { ...user, ...userDoc.data() };
+          const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`
+          );
+          const result = await res.json();
+          const userData = { ...user, ...result.data };
           setCurrentUser(userData);
           localStorage.setItem("currentUser", JSON.stringify(userData));
         }

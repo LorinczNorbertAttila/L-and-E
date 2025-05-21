@@ -14,9 +14,9 @@ import About from "../pages/About";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ProductProvider>
-        <CartProvider>
+    <CartProvider>
+      <AuthProvider>
+        <ProductProvider>
           <BrowserRouter>
             {/*Routes */}
             <Routes>
@@ -80,8 +80,8 @@ export default function App() {
               </Route>
             </Routes>
           </BrowserRouter>
-        </CartProvider>
-      </ProductProvider>
-    </AuthProvider>
+        </ProductProvider>
+      </AuthProvider>
+    </CartProvider>
   );
 }

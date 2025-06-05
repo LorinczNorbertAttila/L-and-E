@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import Header from "../src/components/Header";
 import { useCart } from "../src/contexts/CartContext";
 import { useAuth } from "../src/contexts/AuthContext";
+import { useCategory } from "../src/contexts/CategoryContext";
 import { Button, IconButton } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
@@ -10,6 +11,7 @@ export default function Cart() {
   const { cart, updateCartItemQuantity, removeFromCart, placeOrder } =
     useCart();
   const { currentUser } = useAuth();
+  const { categories } = useCategory();
   const [error, setError] = useState(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [loadingItemId, setLoadingItemId] = useState(null);
@@ -60,61 +62,70 @@ export default function Cart() {
         {cart.length > 0 ? (
           <div className="flex flex-col md:flex-row gap-4">
             <div className="space-y-4 md:w-3/4">
-              {cart.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="bg-white bg-opacity-85 rounded-md shadow-md flex relative"
-                >
-                  <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-md">
-                    <img
-                      src={item.product.imageUrl || ""}
-                      alt={item.product.name}
-                      className="object-contain h-full"
-                    />
-                  </div>
-                  <div className="p-4 flex flex-row justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold">{item.product.name}</h3>
-                      <p>{item.product.type}</p>
-                      <p>{item.product.mass} g</p>
+              {cart.map((item) => {
+                const category = categories.find((c) => c.id == item.product.type);
+                return (
+                  <div
+                    key={item.product.id}
+                    className="bg-white bg-opacity-85 rounded-md shadow-md flex relative"
+                  >
+                    <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-md">
+                      <img
+                        src={item.product.imageUrl || ""}
+                        alt={item.product.name}
+                        className="object-contain h-full"
+                      />
                     </div>
-                    <p className="absolute right-4 p-4 font-bold">
-                      {item.product.price} RON
-                    </p>
-                  </div>
-                  <div className="absolute flex flex-col md:flex-row items-center gap-x-2 right-4 p-4 self-end">
-                    <span>Cantitate: </span>
-                    <div className="flex items-center gap-x-2">
-                      <IconButton
-                        variant="outlined"
-                        className="rounded-full w-6 h-6"
-                        onClick={() =>
-                          handleQuantityChange(item, item.quantity - 1)
-                        }
-                        disabled={loadingItemId === item.product.id}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </IconButton>
-                      <span
-                        className="border rounded bg-white px-2 py-1 w-10 text-center"
-                        id={`quantity-${item.product.id}`}
-                      >
-                        {item.quantity}{" "}
-                      </span>
-                      <IconButton
-                        variant="outlined"
-                        className="rounded-full w-6 h-6"
-                        onClick={() =>
-                          handleQuantityChange(item, item.quantity + 1)
-                        }
-                        disabled={loadingItemId === item.product.id}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </IconButton>
+                    <div className="p-4 flex flex-row justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold">
+                          {item.product.name}
+                        </h3>
+                        <p>
+                          {category?.ro_short ||
+                            category?.ro ||
+                            "Fără categorie"}
+                        </p>
+                        <p>{item.product.mass} g</p>
+                      </div>
+                      <p className="absolute right-4 p-4 font-bold">
+                        {item.product.price} RON
+                      </p>
+                    </div>
+                    <div className="absolute flex flex-col md:flex-row items-center gap-x-2 right-4 p-4 self-end">
+                      <span>Cantitate: </span>
+                      <div className="flex items-center gap-x-2">
+                        <IconButton
+                          variant="outlined"
+                          className="rounded-full w-6 h-6"
+                          onClick={() =>
+                            handleQuantityChange(item, item.quantity - 1)
+                          }
+                          disabled={loadingItemId === item.product.id}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </IconButton>
+                        <span
+                          className="border rounded bg-white px-2 py-1 w-10 text-center"
+                          id={`quantity-${item.product.id}`}
+                        >
+                          {item.quantity}{" "}
+                        </span>
+                        <IconButton
+                          variant="outlined"
+                          className="rounded-full w-6 h-6"
+                          onClick={() =>
+                            handleQuantityChange(item, item.quantity + 1)
+                          }
+                          disabled={loadingItemId === item.product.id}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </IconButton>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="md:w-1/4">
               <div className="bg-white bg-opacity-85 rounded-lg shadow-md p-6">

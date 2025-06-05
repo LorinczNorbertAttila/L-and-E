@@ -165,7 +165,7 @@ router.patch("/update-quantity", async (req, res) => {
       if (change > 0) {
         const maxQuantity = product.quantity - cartItem.quantity;
         if (change > maxQuantity) {
-          throw new Error("Not enough stock");
+          throw new Error("Out of stock");
         }
       }
 

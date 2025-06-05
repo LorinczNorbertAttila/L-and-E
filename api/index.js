@@ -12,11 +12,13 @@ app.use(express.json());
 import productRoutes from "./routes/products.js";
 import userRoutes from "./routes/user.js";
 import cartRoutes from "./routes/cart.js";
+import categoriesRoutes from "./routes/categories.js";
 
 // Mount routes
 app.use("/api/products", productRoutes); // GET /api/products
 app.use("/api/user", userRoutes); // POST /api/user/create, /merge-cart, /set-field
 app.use("/api/cart", cartRoutes); // POST /api/cart/add, /update, /place-order
+app.use("/api/categories", categoriesRoutes); // GET /api/categories
 
 // Fallback route
 app.get("/", (req, res) => {

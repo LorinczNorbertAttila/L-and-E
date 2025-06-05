@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@material-tailwind/react";
+import logoWhite from "../src/assets/images/lande_white.png";
 
 export default function SignUp() {
   // Refs to access the input fields
@@ -71,7 +72,7 @@ export default function SignUp() {
       {/* Link to the home page */}
       <Link to="/">
         <img
-          src="src/assets/images/lande_white.png"
+          src={logoWhite}
           className="w-28 h-28 mb-12"
           alt="lande"
         />

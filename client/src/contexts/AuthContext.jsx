@@ -20,6 +20,7 @@ export function useAuth() {
 // Provider component to wrap the application and provide authentication context
 export default function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const { refreshCart } = useCart();
 
@@ -154,6 +155,7 @@ export default function AuthProvider({ children }) {
   // Subscribe to authentication state changes
   useEffect(() => {
     const unsubscriber = auth.onAuthStateChanged(async (user) => {
+      setFirebaseUser(user);
       if (user) {
         const cachedUser = localStorage.getItem("currentUser");
         if (cachedUser && JSON.parse(cachedUser).uid === user.uid) {
@@ -179,6 +181,7 @@ export default function AuthProvider({ children }) {
   const value = {
     currentUser,
     setCurrentUser,
+    firebaseUser,
     signup,
     login,
     google_login,

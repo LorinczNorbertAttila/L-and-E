@@ -69,7 +69,7 @@ export default function ProductCard({ product }) {
             {product.name}
           </h1>
           <p className="mt-2 text-gray-800">{categoryLabel}</p>
-          <p className="mt-2 text-gray-800">{product.mass} g</p>
+          <p className="mt-2 text-gray-800">{product.mass}</p>
           <p className="mt-2 text-teal-800 font-extrabold">
             {product.price} RON
           </p>
@@ -112,7 +112,7 @@ export default function ProductCard({ product }) {
             {product.name}
           </h2>
           <p className="text-lg mb-2">Tip: {categoryLabel}</p>
-          <p className="text-lg mb-2">Greutate:: {product.mass} g</p>
+          <p className="text-lg mb-2">Greutate: {product.mass}</p>
           <p className="text-lg mb-2">Preț: {product.price} RON</p>
         </DialogBody>
       </Dialog>

@@ -86,7 +86,7 @@ export default function Cart() {
                             category?.ro ||
                             "Fără categorie"}
                         </p>
-                        <p>{item.product.mass} g</p>
+                        <p>{item.product.mass}</p>
                       </div>
                       <p className="absolute right-4 p-4 font-bold">
                         {item.product.price} RON

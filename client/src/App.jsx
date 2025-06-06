@@ -13,6 +13,8 @@ import CategoryProvider from "./contexts/CategoryContext";
 import Background from "./components/Background";
 import About from "../pages/About";
 import Category from "../pages/Category";
+import AdminRoute from "./components/AdminRoute";
+import UploadProducts from "../admin/UploadProducts";
 
 export default function App() {
   return (
@@ -86,6 +88,16 @@ export default function App() {
                     element={
                       <Background>
                         <Profile />
+                      </Background>
+                    }
+                  />
+                </Route>
+                <Route element={<AdminRoute />}>
+                  <Route
+                    path="/admin"
+                    element={
+                      <Background>
+                        <UploadProducts />
                       </Background>
                     }
                   />

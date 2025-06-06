@@ -64,7 +64,7 @@ const FilterDrawer = React.memo(function FilterDrawer({
             checked={selectedMasses.includes(mass)}
             onChange={() => toggleMass(mass)}
             className="hover:before:content-none p-0"
-            label={mass + "g"}
+            label={mass}
           />
         ))}
         <h6 className="mt-4 mb-1">Preț maxim (RON):</h6>

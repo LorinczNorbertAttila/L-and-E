@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { User, ShoppingCart, Power, ChevronDown } from "lucide-react";
+import { User, ShoppingCart, Power, ChevronDown, Heart } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
 import {
@@ -92,6 +92,12 @@ export default function Header() {
             <MenuItem className="flex items-center gap-2 rounded">
               <User className="h-4 w-4" />
               <span className="font-normal">Profilul meu</span>
+            </MenuItem>
+            </Link>
+            <Link to="/favorites">
+            <MenuItem className="flex items-center gap-2 rounded">
+              <Heart className="h-4 w-4" />
+              <span className="font-normal">Favoritele mele</span>
             </MenuItem>
           </Link>
           <MenuItem

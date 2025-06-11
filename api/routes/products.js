@@ -95,6 +95,7 @@ router.post("/process-file", upload.single("file"), async (req, res) => {
         const quantity = Number(row.disponibil);
         const mass = extractMassRaw(row.denumire || "");
         const type = Number(row.tip);
+        const description = row.description || "";
         products.push({
           id: id,
           name: capitalizeName(name),
@@ -103,6 +104,7 @@ router.post("/process-file", upload.single("file"), async (req, res) => {
           imageUrl: row.imageUrl || "",
           mass,
           type: type,
+          description,
         });
       })
       .on("end", () => {
@@ -149,7 +151,7 @@ router.post("/upload", async (req, res) => {
             const updatedQuantity =
               Number(existingData.quantity || 0) + Number(product.quantity);
 
-            // Csak akkor frissítjük az árat/típust, ha változott
+            // Update the product with new quantity and check for price changes
             let updateData = { quantity: updatedQuantity };
             if (existingData.price !== product.price) {
               updateData.price = product.price;
@@ -161,6 +163,9 @@ router.post("/upload", async (req, res) => {
             }
             if (existingData.type !== product.type) {
               updateData.type = product.type;
+            }
+            if (existingData.description !== product.description) {
+              updateData.description = product.description;
             }
 
             await docRef.update(updateData);

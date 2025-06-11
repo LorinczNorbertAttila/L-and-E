@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
 import { auth, provider } from "../../../firebase/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -21,6 +21,7 @@ export function useAuth() {
 export default function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [firebaseUser, setFirebaseUser] = useState(null);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const { refreshCart } = useCart();
 
@@ -32,17 +33,13 @@ export default function AuthProvider({ children }) {
       body: JSON.stringify({ uid, email, name, lname, photoURL }),
     });
     const result = await res.json();
-
-    if (!res.ok || !result.success) {
-      throw new Error("User creation failed");
-    }
+    if (!res.ok || !result.success) throw new Error("User creation failed");
   }
 
   // Merge cart items from localStorage with Firestore
   async function mergeCartWithFirestore(uid) {
     const savedCart = localStorage.getItem("cart");
     if (!savedCart) return;
-
     const localCart = JSON.parse(savedCart);
 
     const res = await fetch(
@@ -55,11 +52,23 @@ export default function AuthProvider({ children }) {
     );
     const result = await res.json();
 
-    if (!res.ok || !result.success) {
+    if (!res.ok || !result.success)
       throw new Error(result.message || "Failed to merge cart");
-    }
 
     localStorage.removeItem("cart");
+  }
+
+  // Fetch user's favorite products from Firestore
+  async function getFavorites(uid) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/user/favorites?uid=${uid}`
+      );
+      const data = await res.json();
+      if (res.ok && data.success) setFavorites(data.favorites);
+    } catch (err) {
+      console.error("Error fetching favorites", err);
+    }
   }
 
   //Post login initialization
@@ -72,7 +81,10 @@ export default function AuthProvider({ children }) {
       `${import.meta.env.VITE_API_URL}/api/user/profile/${uid}`
     );
     const result = await res.json();
-    setCurrentUser({ ...userCredential.user, ...result.data });
+    const userData = { ...userCredential.user, ...result.data };
+    setCurrentUser(userData);
+    localStorage.setItem("currentUser", JSON.stringify(userData));
+    await getFavorites(uid); // Fetch favorites after login
   }
 
   // Sign up a new user and create Firestore document
@@ -113,7 +125,7 @@ export default function AuthProvider({ children }) {
     );
     const result = await res.json();
     // If user doesn't exist, create a new user in Firestore
-    if (!!result.exists) {
+    if (!result.exists) {
       await createUser(uid, email, displayName, "", photoURL);
     }
     await postLoginInit(userCredential); // Initialize user data after login
@@ -128,6 +140,8 @@ export default function AuthProvider({ children }) {
   // Logout
   function logout() {
     setCurrentUser(null);
+    setFirebaseUser(null);
+    setFavorites([]);
     return signOut(auth);
   }
 
@@ -147,8 +161,57 @@ export default function AuthProvider({ children }) {
       }
     );
 
-    if (!res.ok) {
-      throw new Error("Failed to update field");
+    if (!res.ok) throw new Error("Failed to update field");
+  }
+
+  //Add products from user's favorites
+  async function addToFavorites(productId) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/user/add-to-favorites`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: currentUser.uid,
+            productId,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) setFavorites(data.favorites);
+      return data;
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || "Error adding to favorites",
+      };
+    }
+  }
+
+  //Remove products from user's favorites
+  async function removeFromFavorites(productId) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/user/remove-from-favorites`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: currentUser.uid,
+            productId,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) setFavorites(data.favorites);
+
+      return data;
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || "Error removing from favorites",
+      };
     }
   }
 
@@ -157,17 +220,24 @@ export default function AuthProvider({ children }) {
     const unsubscriber = auth.onAuthStateChanged(async (user) => {
       setFirebaseUser(user);
       if (user) {
-        const cachedUser = localStorage.getItem("currentUser");
-        if (cachedUser && JSON.parse(cachedUser).uid === user.uid) {
-          setCurrentUser(JSON.parse(cachedUser));
-        } else {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`
-          );
-          const result = await res.json();
-          const userData = { ...user, ...result.data };
-          setCurrentUser(userData);
-          localStorage.setItem("currentUser", JSON.stringify(userData));
+        try {
+          const cachedUser = JSON.parse(localStorage.getItem("currentUser"));
+          if (cachedUser?.uid === user.uid) {
+            setCurrentUser(cachedUser);
+            await getFavorites(cachedUser.uid); // Fetch favorites with cached user UID
+          } else {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`
+            );
+            const result = await res.json();
+            const userData = { ...user, ...result.data };
+            setCurrentUser(userData);
+            localStorage.setItem("currentUser", JSON.stringify(userData));
+            await getFavorites(userData.uid); // Fetch favorites with user UID
+          }
+        } catch (error) {
+          console.error("Error handling cached user", err);
+          localStorage.removeItem("currentUser");
         }
       } else {
         setCurrentUser(null);
@@ -178,17 +248,24 @@ export default function AuthProvider({ children }) {
     return unsubscriber;
   }, []);
 
-  const value = {
-    currentUser,
-    setCurrentUser,
-    firebaseUser,
-    signup,
-    login,
-    google_login,
-    logout,
-    resetPassword,
-    setField,
-  };
+  const value = useMemo(
+    () => ({
+      currentUser,
+      setCurrentUser,
+      firebaseUser,
+      signup,
+      login,
+      google_login,
+      logout,
+      resetPassword,
+      setField,
+      favorites,
+      getFavorites,
+      addToFavorites,
+      removeFromFavorites,
+    }),
+    [currentUser, firebaseUser, favorites]
+  );
 
   return (
     <AuthContext.Provider value={value}>

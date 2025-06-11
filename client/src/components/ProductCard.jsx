@@ -7,9 +7,8 @@ import {
   Card,
   CardHeader,
   CardBody,
-  Dialog,
-  DialogBody,
 } from "@material-tailwind/react";
+import ProductModal from "./ProductModal";
 
 export default function ProductCard({ product }) {
   const [open, setOpen] = useState(false); // State for controlling modal visibility
@@ -56,11 +55,17 @@ export default function ProductCard({ product }) {
       >
         {/* Product Image */}
         <CardHeader className="md:h-48 h-32 flex justify-center">
-          <img
-            src={product.imageUrl || ""}
-            alt={product.name}
-            className="object-contain h-full group-hover:scale-110 transition-transform"
-          />
+           <div className="w-full flex justify-center items-center bg-white border rounded-md">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="object-contain h-full group-hover:scale-110 transition-transform"
+              />
+            ) : (
+              <div className="text-gray-400 text-sm">Imagine indisponibilă</div>
+            )}
+          </div>
         </CardHeader>
 
         {/* Product Details */}
@@ -96,26 +101,7 @@ export default function ProductCard({ product }) {
       </Card>
 
       {/* Product Details Modal */}
-      <Dialog open={open} handler={closeModal} aria-labelledby="modal-title">
-        <DialogBody>
-          {/* Close Modal Button */}
-          <IconButton
-            variant="text"
-            onClick={closeModal}
-            className="!absolute top-2 right-2 text-teal-800"
-          >
-            <X />
-          </IconButton>
-
-          {/* Modal Content */}
-          <h2 id="modal-title" className="text-2xl font-bold mb-4 text-center">
-            {product.name}
-          </h2>
-          <p className="text-lg mb-2">Tip: {categoryLabel}</p>
-          <p className="text-lg mb-2">Greutate: {product.mass}</p>
-          <p className="text-lg mb-2">Preț: {product.price} RON</p>
-        </DialogBody>
-      </Dialog>
+      <ProductModal open={open} onClose={closeModal} product={product} />
     </>
   );
 }

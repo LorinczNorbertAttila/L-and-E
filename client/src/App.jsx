@@ -15,6 +15,7 @@ import About from "../pages/About";
 import Category from "../pages/Category";
 import AdminRoute from "./components/AdminRoute";
 import UploadProducts from "../admin/UploadProducts";
+import Favorites from "../pages/Favorites";
 
 export default function App() {
   return (
@@ -79,6 +80,14 @@ export default function App() {
                   element={
                     <Background>
                       <About />
+                    </Background>
+                  }
+                />
+                <Route
+                  path="/favorites"
+                  element={
+                    <Background>
+                      <Favorites />
                     </Background>
                   }
                 />

@@ -4,6 +4,32 @@ import admin from "firebase-admin";
 
 const router = express.Router();
 
+// Helper function to validate IDs
+function isValidId(id) {
+  return typeof id === "string" && id.trim().length > 0;
+}
+
+// Helper function to fetch products by IDs
+async function fetchProductsByIds(ids) {
+  if (!ids.length) return [];
+  const productChunks = [];
+  for (let i = 0; i < ids.length; i += 10) {
+    productChunks.push(ids.slice(i, i + 10));
+  }
+
+  let products = [];
+  for (const chunk of productChunks) {
+    const snaps = await db
+      .collection("products")
+      .where(admin.firestore.FieldPath.documentId(), "in", chunk)
+      .get();
+    products = products.concat(
+      snaps.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    );
+  }
+  return products;
+}
+
 /**
  * GET /api/user/profile/:uid
  * Fetch user profile by UID
@@ -177,6 +203,135 @@ router.patch("/set-field", async (req, res) => {
   } catch (error) {
     console.error("Error updating field:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * GET /api/user/favorites?uid=...
+ * Returns the user's favorite products (with full product data)
+ */
+router.get("/favorites", async (req, res) => {
+  const { uid } = req.query;
+
+  if (!isValidId(uid)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing or invalid uid" });
+  }
+
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+
+    if (!userSnap.exists) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const favorites = userSnap.data()?.favorites ?? [];
+    if (!favorites.length) {
+      return res.status(200).json({ success: true, favorites: [] });
+    }
+
+    const detailedFavorites = await fetchProductsByIds(favorites);
+
+    res.status(200).json({ success: true, favorites: detailedFavorites });
+  } catch (err) {
+    console.error("Error fetching favorites:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * POST /api/user/add-to-favorites
+ * Body: { uid, productId }
+ * Adds a product to the user's favorites
+ */
+router.post("/add-to-favorites", async (req, res) => {
+  const { uid, productId } = req.body;
+
+  if (!isValidId(uid) || !isValidId(productId))
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing or invalid uid/productId" });
+
+  try {
+    const userRef = db.collection("users").doc(uid);
+
+    let detailedFavorites = [];
+    await db.runTransaction(async (t) => {
+      const userSnap = await t.get(userRef);
+      if (!userSnap.exists)
+        throw new Error("User not found");
+
+      const favorites = userSnap.data().favorites || [];
+      if (favorites.includes(productId)) {
+        throw new Error("Already in favorites");
+      }
+
+      const updatedFavorites = [...favorites, productId];
+      t.update(userRef, {
+        favorites: admin.firestore.FieldValue.arrayUnion(productId),
+      });
+
+      // Fetch product details inside the transaction for consistency
+      detailedFavorites = await fetchProductsByIds(updatedFavorites);
+    });
+
+    res.status(200).json({ success: true, favorites: detailedFavorites });
+  } catch (err) {
+    const msg =
+      err.message === "User not found" || err.message === "Already in favorites"
+        ? err.message
+        : "Server error";
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
+ * POST /api/user/remove-from-favorites
+ * Body: { uid, productId }
+ * Removes a product from the user's favorites 
+ */
+router.post("/remove-from-favorites", async (req, res) => {
+  const { uid, productId } = req.body;
+
+  if (!isValidId(uid) || !isValidId(productId)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing or invalid uid/productId" });
+  }
+
+  try {
+    const userRef = db.collection("users").doc(uid);
+
+    let detailedFavorites = [];
+    await db.runTransaction(async (t) => {
+      const userSnap = await t.get(userRef);
+      if (!userSnap.exists)
+        throw new Error("User not found");
+
+      const favorites = userSnap.data().favorites || [];
+      if (!favorites.includes(productId)) {
+        throw new Error("Product not in favorites");
+      }
+
+      const updatedFavorites = favorites.filter((id) => id !== productId);
+      t.update(userRef, {
+        favorites: admin.firestore.FieldValue.arrayRemove(productId),
+      });
+
+      // Fetch product details inside the transaction for consistency
+      detailedFavorites = await fetchProductsByIds(updatedFavorites);
+    });
+
+    res.status(200).json({ success: true, favorites: detailedFavorites });
+  } catch (err) {
+    const msg =
+      err.message === "User not found" || err.message === "Product not in favorites"
+        ? err.message
+        : "Server error";
+    res.status(500).json({ success: false, message: msg });
   }
 });
 

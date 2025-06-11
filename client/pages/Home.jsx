@@ -1,20 +1,19 @@
+import { useState, useEffect, useRef } from "react";
 import Header from "../src/components/Header";
 import Footer from "../src/components/Footer";
 import { useProduct } from "../src/contexts/ProductContext";
 import { useCategory } from "../src/contexts/CategoryContext";
-import {
-  User,
-  Search,
-} from "lucide-react";
+import { User, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../src/contexts/AuthContext";
-import { Carousel } from "@material-tailwind/react";
+import { Carousel, Card, List, ListItem } from "@material-tailwind/react";
 import CategorySection from "../src/components/CategorySection";
-import carouselImg1 from "../src/assets/images/fb_LandE.jpg"
-import carouselImg2 from "../src/assets/images/Parteneri.png"
-import carouselImg3 from "../src/assets/images/Carousel_LandE.png"
+import carouselImg1 from "../src/assets/images/fb_LandE.jpg";
+import carouselImg2 from "../src/assets/images/Parteneri.png";
+import carouselImg3 from "../src/assets/images/Carousel_LandE.png";
 import BotpressChat from "../chatbots/BotPress";
 import TidioChat from "../chatbots/Tidio";
+import ProductModal from "../src/components/ProductModal";
 
 //Custom navigation for the carousel
 const renderCarouselNavigation = ({ setActiveIndex, activeIndex, length }) => (
@@ -35,6 +34,38 @@ export default function Home() {
   const { currentUser } = useAuth();
   const { products } = useProduct();
   const { categories } = useCategory();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredProducts([]);
+      setShowResults(false);
+      return;
+    }
+    const filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+    setShowResults(filtered.length > 0);
+  }, [searchTerm, products]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowResults(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -44,11 +75,17 @@ export default function Home() {
             Despre noi
           </Link>
           <div className="ml-auto flex gap-4  justify-center items-center">
-            <div className="relative justify-center items-center">
+            <div
+              className="relative justify-center items-center"
+              ref={searchRef}
+            >
               <input
                 type="text"
                 className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-none transition-all duration-300 ease-in-out w-12 focus:w-64"
                 placeholder="Căutare..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => searchTerm && setShowResults(true)}
               />
               <button
                 type="submit"
@@ -56,7 +93,28 @@ export default function Home() {
               >
                 <Search className="text-teal-800 h-5" />
               </button>
+
+              {showResults && (
+                <Card className="absolute top-12 w-64 z-50 max-h-72 overflow-y-auto">
+                  <List>
+                    {filteredProducts.map((product) => (
+                      <ListItem
+                        key={product.id}
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setShowDialog(true);
+                          setShowResults(false); // bezárjuk a találati listát
+                        }}
+                        className="cursor-pointer hover:bg-gray-100 transition-colors"
+                      >
+                        {product.name}
+                      </ListItem>
+                    ))}
+                  </List>
+                </Card>
+              )}
             </div>
+
             {!currentUser && (
               <Link to="/sign-up">
                 <li className="hover:underline text-white flex items-center gap-1">
@@ -95,7 +153,9 @@ export default function Home() {
         </Carousel>
       </div>
       {categories.map((category) => {
-        const categoryProducts = products.filter((p) => p.type === Number(category.id));
+        const categoryProducts = products.filter(
+          (p) => p.type === Number(category.id)
+        );
         if (categoryProducts.length < 3) return null;
         return (
           <CategorySection
@@ -107,6 +167,12 @@ export default function Home() {
       })}
       {/*<BotpressChat/>*/}
       <Footer />
+      {/* Search Result Modal */}
+      <ProductModal
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+        product={selectedProduct}
+      />
     </>
   );
 }

@@ -97,6 +97,11 @@ export default function EditableProductCard({
             <p className="text-red-500 text-xs">{errors.quantity}</p>
           )}
         </div>
+        <Input
+          label="Descriere"
+          value={product.description}
+          onChange={(e) => handleChange("description", e.target.value)}
+        />
         <div>
           <Select
             label="Categorie"

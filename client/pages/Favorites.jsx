@@ -8,25 +8,12 @@ import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@material-tailwind/react";
 
 export default function Favorites() {
-  const {
-    favorites = [],
-    removeFromFavorites,
-    getFavorites,
-    currentUser,
-  } = useAuth();
+  const { favorites = [], removeFromFavorites } = useAuth();
   const { categories = [] } = useCategory();
   const [error, setError] = useState(null);
   const [loadingCartId, setLoadingCartId] = useState(null);
   const [loadingFavoriteId, setLoadingFavoriteId] = useState(null);
   const { addToCart } = useCart();
-
-  useEffect(() => {
-    if (currentUser && currentUser.uid) {
-      getFavorites(currentUser.uid); // retrieve favorites when the user is logged in
-    }
-    // Optional: clear favorites on logout if needed
-    // else setFavorites([]);
-  }, [currentUser, getFavorites]);
 
   // Handles removing a product from favorites
   const handleRemoveFavorite = async (id) => {

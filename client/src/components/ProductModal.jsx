@@ -33,6 +33,7 @@ export default function ProductModal({ open, onClose, product }) {
     setCartLoading(true);
     try {
       await addToCart(product.id, product.mass, product.price); // Try adding product to cart
+      onClose(); // Close the modal after adding to cart
     } catch (err) {
       console.error("Error adding to cart:", err); // Log error if it occurs
     } finally {
@@ -89,7 +90,9 @@ export default function ProductModal({ open, onClose, product }) {
           <p className="text-sm">{categoryLabel}</p>
           <p className="text-lg font-bold mb-4">{product.price} RON</p>
           <p className="text-base">Descriere: </p>
-          <p className="text-sm mb-8">{product.description ?? "Produsul momentan nu are descriere"}</p>
+          <p className="text-sm mb-8">
+            {product.description ?? "Produsul momentan nu are descriere"}
+          </p>
           <div className="flex flex-wrap gap-2 mb-4">
             <Button
               disabled={product.quantity === 0 || cartLoading}

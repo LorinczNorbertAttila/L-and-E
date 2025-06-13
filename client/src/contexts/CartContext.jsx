@@ -212,7 +212,6 @@ export default function CartProvider({ children }) {
       if (res.ok && result.success) {
         if (!userId) localStorage.removeItem("cart");
         setCart([]);
-        console.log("Order placed:", result.orderId);
       } else if (result.cart) {
         setCart(result.cart); // Refresh cart from server
       } else {

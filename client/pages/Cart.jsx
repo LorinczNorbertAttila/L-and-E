@@ -53,17 +53,21 @@ export default function Cart() {
   return (
     <>
       {error && <p className="text-red-500">{error}</p>}
-      <header>
-        <div className="flex flex-row p-4 gap-4 justify-center items-center" />
-      </header>
-      <Header />
+      <header className="p-4" />
+      <div className="pb-4">
+        <Header />
+      </div>
       <div className="p-4">
-        <h2 className="text-white text-2xl font-bold mb-4">Coșul meu</h2>
+        <h2 className="text-white text-2xl font-bold md:px-20 mb-4">
+          Coșul meu
+        </h2>
         {cart.length > 0 ? (
           <div className="flex flex-col md:flex-row gap-4">
             <div className="space-y-4 md:w-3/4">
               {cart.map((item) => {
-                const category = categories.find((c) => c.id == item.product.type);
+                const category = categories.find(
+                  (c) => c.id == item.product.type
+                );
                 return (
                   <div
                     key={item.product.id}

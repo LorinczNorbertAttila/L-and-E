@@ -22,6 +22,7 @@ export default function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { refreshCart } = useCart();
 
@@ -71,6 +72,19 @@ export default function AuthProvider({ children }) {
     }
   }
 
+  // Fetch user's orders from Firestore
+  async function getOrders(uid) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/user/orders?uid=${uid}`
+      );
+      const data = await res.json();
+      if (res.ok && data.success) setOrders(data.orders);
+    } catch (err) {
+      console.error("Error fetching favorites", err);
+    }
+  }
+
   //Post login initialization
   async function postLoginInit(userCredential) {
     const uid = userCredential.user.uid;
@@ -85,6 +99,7 @@ export default function AuthProvider({ children }) {
     setCurrentUser(userData);
     localStorage.setItem("currentUser", JSON.stringify(userData));
     await getFavorites(uid); // Fetch favorites after login
+    await getOrders(uid); // Fetch orders after login
   }
 
   // Sign up a new user and create Firestore document
@@ -225,6 +240,7 @@ export default function AuthProvider({ children }) {
           if (cachedUser?.uid === user.uid) {
             setCurrentUser(cachedUser);
             await getFavorites(cachedUser.uid); // Fetch favorites with cached user UID
+            await getOrders(cachedUser.uid); // Fetch orders with cached user UID
           } else {
             const res = await fetch(
               `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`
@@ -234,6 +250,7 @@ export default function AuthProvider({ children }) {
             setCurrentUser(userData);
             localStorage.setItem("currentUser", JSON.stringify(userData));
             await getFavorites(userData.uid); // Fetch favorites with user UID
+            await getOrders(userData.uid); // Fetch orders with user UID
           }
         } catch (error) {
           console.error("Error handling cached user", err);
@@ -263,8 +280,9 @@ export default function AuthProvider({ children }) {
       getFavorites,
       addToFavorites,
       removeFromFavorites,
+      orders,
     }),
-    [currentUser, firebaseUser, favorites]
+    [currentUser, firebaseUser, favorites, orders]
   );
 
   return (

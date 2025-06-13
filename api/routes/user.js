@@ -261,8 +261,7 @@ router.post("/add-to-favorites", async (req, res) => {
     let detailedFavorites = [];
     await db.runTransaction(async (t) => {
       const userSnap = await t.get(userRef);
-      if (!userSnap.exists)
-        throw new Error("User not found");
+      if (!userSnap.exists) throw new Error("User not found");
 
       const favorites = userSnap.data().favorites || [];
       if (favorites.includes(productId)) {
@@ -291,7 +290,7 @@ router.post("/add-to-favorites", async (req, res) => {
 /**
  * POST /api/user/remove-from-favorites
  * Body: { uid, productId }
- * Removes a product from the user's favorites 
+ * Removes a product from the user's favorites
  */
 router.post("/remove-from-favorites", async (req, res) => {
   const { uid, productId } = req.body;
@@ -308,8 +307,7 @@ router.post("/remove-from-favorites", async (req, res) => {
     let detailedFavorites = [];
     await db.runTransaction(async (t) => {
       const userSnap = await t.get(userRef);
-      if (!userSnap.exists)
-        throw new Error("User not found");
+      if (!userSnap.exists) throw new Error("User not found");
 
       const favorites = userSnap.data().favorites || [];
       if (!favorites.includes(productId)) {
@@ -328,10 +326,62 @@ router.post("/remove-from-favorites", async (req, res) => {
     res.status(200).json({ success: true, favorites: detailedFavorites });
   } catch (err) {
     const msg =
-      err.message === "User not found" || err.message === "Product not in favorites"
+      err.message === "User not found" ||
+      err.message === "Product not in favorites"
         ? err.message
         : "Server error";
     res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
+ * GET /api/user/orders?uid=...
+ * Returns the user's orders
+ */
+router.get("/orders", async (req, res) => {
+  const { uid } = req.query;
+
+  if (!isValidId(uid)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing or invalid uid" });
+  }
+
+  try {
+    const orderQuery = await db
+      .collection("orders")
+      .where("userId", "==", uid)
+      .get();
+
+    if (orderQuery.empty) {
+      return res.status(200).json({ success: true, orders: [] });
+    }
+    const orders = await Promise.all(
+      orderQuery.docs.map(async (doc) => {
+        const data = doc.data();
+        //Timestamp → ISO string
+        const createdAtIso = data.createdAt.toDate().toISOString();
+        // Fetch detailed product information for each order item
+        const productIds = (data.items ?? []).map((i) => i.productId);
+        const detailedProducts = await fetchProductsByIds(productIds);
+
+        const detailedItems = (data.items ?? []).map((i) => ({
+          ...i,
+          product: detailedProducts.find((p) => p.id === i.productId) ?? null,
+        }));
+
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: createdAtIso,
+          items: detailedItems,
+        };
+      })
+    );
+    res.status(200).json({ success: true, orders });
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

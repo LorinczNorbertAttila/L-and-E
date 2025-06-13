@@ -264,11 +264,11 @@ export default function Category() {
         </div>
       </header>
       <Header />
-      <h1 className="text-white text-2xl font-bold px-4 md:px-8 py-4">
+      <h1 className="text-white text-2xl font-bold px-4 md:px-20 pt-8 pb-2">
         {category?.ro || "Produse"}
       </h1>
       {hasProducts && (
-        <div className="flex justify-between items-center px-4 md:px-8 py-4">
+        <div className="flex justify-between items-center px-4 md:px-20 py-2">
           <Tooltip content="Filtrează produsele" placement="right">
             <IconButton
               variant="text"

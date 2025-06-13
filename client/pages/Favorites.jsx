@@ -43,17 +43,20 @@ export default function Favorites() {
 
   return (
     <>
-      <header>
-        <div className="flex flex-row p-4 gap-4 justify-center items-center" />
-      </header>
-      <Header />
+      <header className="p-4" />
+      <div className="pb-4">
+        <Header />
+      </div>
       <div className="p-4">
-        <h2 className="text-white text-2xl font-bold mb-4">Favorite</h2>
+        <h2 className="text-white text-2xl font-bold mb-4 md:px-20">
+          Favorite
+        </h2>
         {error && <div className="text-red-600 text-center mb-2">{error}</div>}
         {Array.isArray(favorites) && favorites.length > 0 ? (
           <div className="flex flex-col gap-4 md:px-40 space-y-4">
             {favorites.map((item) => {
-              const category = categories.find((c) => c.id === item.type) || {};
+              const category =
+                categories.find((c) => Number(c.id) === item.type) || {};
               return (
                 <div
                   key={item.id}

@@ -134,7 +134,8 @@ export default function Home() {
                               <img
                                 src={product.imageUrl}
                                 alt={product.name}
-                                className="object-contain h-full"
+                                className="object-contain h-full rounded-md"
+                                loading="lazy"
                               />
                             ) : (
                               <span className="text-gray-400 text-xs text-center">
@@ -205,6 +206,7 @@ export default function Home() {
         );
       })}
       {/*<BotpressChat/>*/}
+      {/* <TidioChat /> */}
       <Footer />
       {/* Product modal for selected product from search */}
       <ProductModal

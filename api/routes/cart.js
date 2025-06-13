@@ -8,7 +8,7 @@ function isValidId(id) {
   return typeof id === "string" && id.trim().length > 0;
 }
 
-// Helper to get detailed cart for a user 
+// Helper to get detailed cart for a user
 async function getDetailedCart(uid) {
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
@@ -301,9 +301,7 @@ router.post("/place-order", async (req, res) => {
         .json({ success: false, message: "Cart not found" });
     }
 
-    res
-      .status(201)
-      .json({ success: true, orderId: orderRef.id, cart: updatedCart });
+    res.status(201).json({ success: true, cart: updatedCart });
   } catch (err) {
     console.error("Order error:", err);
     res.status(500).json({ success: false, message: "Order error" });

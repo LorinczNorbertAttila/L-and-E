@@ -1,7 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { User, ShoppingCart, Power, ChevronDown, Heart } from "lucide-react";
+import {
+  User,
+  ShoppingCart,
+  Power,
+  ChevronDown,
+  Heart,
+  ShoppingBasket,
+  ShieldQuestion,
+} from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
 import {
@@ -16,7 +24,7 @@ import {
 import logo from "../assets/images/lande.png";
 
 export default function Header() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, firebaseUser, logout } = useAuth();
   const { cart } = useCart();
   const { categories } = useCategory();
   const [animate, setAnimate] = useState(false);
@@ -24,6 +32,24 @@ export default function Header() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!firebaseUser) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const token = await firebaseUser.getIdTokenResult();
+        setIsAdmin(token.claims.admin === true);
+      } catch (e) {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [firebaseUser]);
 
   // Memoized calculation of the total number of items in the cart
   const itemCount = React.useMemo(
@@ -93,13 +119,27 @@ export default function Header() {
               <User className="h-4 w-4" />
               <span className="font-normal">Profilul meu</span>
             </MenuItem>
-            </Link>
-            <Link to="/favorites">
+          </Link>
+          <Link to="/favorites">
             <MenuItem className="flex items-center gap-2 rounded">
               <Heart className="h-4 w-4" />
               <span className="font-normal">Favoritele mele</span>
             </MenuItem>
           </Link>
+          <Link to="/orders">
+            <MenuItem className="flex items-center gap-2 rounded">
+              <ShoppingBasket className="h-4 w-4" />
+              <span className="font-normal">Comenzile mele</span>
+            </MenuItem>
+          </Link>
+          {isAdmin && (
+            <Link to="/admin">
+              <MenuItem className="flex items-center gap-2 rounded">
+                <ShieldQuestion className="h-4 w-4" />
+                <span className="font-normal">Panou de administrare</span>
+              </MenuItem>
+            </Link>
+          )}
           <MenuItem
             onClick={handleLogout}
             disabled={loading}

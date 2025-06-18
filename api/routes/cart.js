@@ -286,7 +286,7 @@ router.post("/place-order", async (req, res) => {
         userId: uid,
         items,
         total,
-        status: "Processing",
+        status: "Procesare",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 

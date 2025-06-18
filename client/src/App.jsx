@@ -17,6 +17,7 @@ import AdminRoute from "./components/AdminRoute";
 import UploadProducts from "../admin/UploadProducts";
 import Favorites from "../pages/Favorites";
 import Orders from "../pages/Orders";
+import AllOrders from "../admin/AllOrders";
 
 export default function App() {
   return (
@@ -84,22 +85,6 @@ export default function App() {
                     </Background>
                   }
                 />
-                <Route
-                  path="/favorites"
-                  element={
-                    <Background>
-                      <Favorites />
-                    </Background>
-                  }
-                />
-                <Route
-                  path="/orders"
-                  element={
-                    <Background>
-                      <Orders />
-                    </Background>
-                  }
-                />
                 <Route element={<PrivateRoute />}>
                   <Route
                     path="/profile"
@@ -109,13 +94,37 @@ export default function App() {
                       </Background>
                     }
                   />
+                  <Route
+                    path="/favorites"
+                    element={
+                      <Background>
+                        <Favorites />
+                      </Background>
+                    }
+                  />
+                  <Route
+                    path="/orders"
+                    element={
+                      <Background>
+                        <Orders />
+                      </Background>
+                    }
+                  />
                 </Route>
                 <Route element={<AdminRoute />}>
                   <Route
-                    path="/admin"
+                    path="/admin-upload"
                     element={
                       <Background>
                         <UploadProducts />
+                      </Background>
+                    }
+                  />
+                  <Route
+                    path="/admin-order"
+                    element={
+                      <Background>
+                        <AllOrders />
                       </Background>
                     }
                   />

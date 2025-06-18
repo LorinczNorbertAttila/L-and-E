@@ -8,7 +8,8 @@ import {
   ChevronDown,
   Heart,
   ShoppingBasket,
-  ShieldQuestion,
+  Upload, 
+  List,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
@@ -94,63 +95,71 @@ export default function Header() {
 
     return (
       <Menu open={isMenuOpen} handler={setIsMenuOpen} placement="bottom-end">
-        <MenuHandler>
-          <Button
-            variant="text"
-            color="blue-gray"
-            className="flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 lg:ml-auto"
-          >
-            <Avatar
-              src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
-              size="sm"
-              alt="profile_picture"
-            />
-            <ChevronDown
-              strokeWidth={2.5}
-              className={`h-3 w-3 transition-transform ${
-                isMenuOpen ? "rotate-180" : ""
-              }`}
-            />
-          </Button>
-        </MenuHandler>
-        <MenuList className="p-1">
-          <Link to="/profile">
-            <MenuItem className="flex items-center gap-2 rounded">
-              <User className="h-4 w-4" />
-              <span className="font-normal">Profilul meu</span>
-            </MenuItem>
-          </Link>
-          <Link to="/favorites">
-            <MenuItem className="flex items-center gap-2 rounded">
-              <Heart className="h-4 w-4" />
-              <span className="font-normal">Favoritele mele</span>
-            </MenuItem>
-          </Link>
-          <Link to="/orders">
-            <MenuItem className="flex items-center gap-2 rounded">
-              <ShoppingBasket className="h-4 w-4" />
-              <span className="font-normal">Comenzile mele</span>
-            </MenuItem>
-          </Link>
-          {isAdmin && (
-            <Link to="/admin">
-              <MenuItem className="flex items-center gap-2 rounded">
-                <ShieldQuestion className="h-4 w-4" />
-                <span className="font-normal">Panou de administrare</span>
-              </MenuItem>
-            </Link>
-          )}
-          <MenuItem
-            onClick={handleLogout}
-            disabled={loading}
-            className="flex items-center gap-2 rounded hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
-          >
-            <Power className="h-4 w-4 text-red-500" />
-            <span className="font-normal text-red-500" disabled={loading}>
-              Sign Out
-            </span>
+      <MenuHandler>
+        <Button
+        variant="text"
+        color="blue-gray"
+        className="flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 lg:ml-auto"
+        >
+        <Avatar
+          src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
+          size="sm"
+          alt="profile_picture"
+        />
+        <ChevronDown
+          strokeWidth={2.5}
+          className={`h-3 w-3 transition-transform ${
+          isMenuOpen ? "rotate-180" : ""
+          }`}
+        />
+        </Button>
+      </MenuHandler>
+      <MenuList className="p-1">
+        <Link to="/profile">
+        <MenuItem className="flex items-center gap-2 rounded">
+          <User className="h-4 w-4" />
+          <span className="font-normal">Profilul meu</span>
+        </MenuItem>
+        </Link>
+        <Link to="/favorites">
+        <MenuItem className="flex items-center gap-2 rounded">
+          <Heart className="h-4 w-4" />
+          <span className="font-normal">Favoritele mele</span>
+        </MenuItem>
+        </Link>
+        <Link to="/orders">
+        <MenuItem className="flex items-center gap-2 rounded">
+          <ShoppingBasket className="h-4 w-4" />
+          <span className="font-normal">Comenzile mele</span>
+        </MenuItem>
+        </Link>
+        {isAdmin && (
+        <>
+          <Link to="/admin-upload">
+          <MenuItem className="flex items-center gap-2 rounded">
+            <Upload  className="h-4 w-4" />
+            <span className="font-normal">Panou de administrare (Upload)</span>
           </MenuItem>
-        </MenuList>
+          </Link>
+          <Link to="/admin-order">
+          <MenuItem className="flex items-center gap-2 rounded">
+            <List  className="h-4 w-4" />
+            <span className="font-normal">Panou de administrare (Comenzi)</span>
+          </MenuItem>
+          </Link>
+        </>
+        )}
+        <MenuItem
+        onClick={handleLogout}
+        disabled={loading}
+        className="flex items-center gap-2 rounded hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
+        >
+        <Power className="h-4 w-4 text-red-500" />
+        <span className="font-normal text-red-500">
+          Sign Out
+        </span>
+        </MenuItem>
+      </MenuList>
       </Menu>
     );
   }

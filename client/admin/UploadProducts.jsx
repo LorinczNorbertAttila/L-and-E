@@ -49,7 +49,9 @@ export default function UploadProducts() {
       if (res.ok && data.data) {
         setPreviewProducts(data.data);
         setStatusType("success");
-        setStatus(`Au fost încărcate ${data.data.length} produse pentru previzualizare`);
+        setStatus(
+          `Au fost încărcate ${data.data.length} produse pentru previzualizare`
+        );
       } else {
         setStatusType("error");
         setStatus(data.error || "A apărut o eroare");
@@ -110,7 +112,9 @@ export default function UploadProducts() {
             .map((e) => e.id)
             .join(", ")}.`;
         }
-        setStatusType(data.errors && data.errors.length > 0 ? "error" : "success");
+        setStatusType(
+          data.errors && data.errors.length > 0 ? "error" : "success"
+        );
         setStatus(msg);
         setPreviewProducts([]);
       } else {
@@ -147,10 +151,10 @@ export default function UploadProducts() {
 
   return (
     <>
-      <header>
-        <div className="flex flex-row p-4 gap-4 justify-center items-center" />
-      </header>
-      <Header />
+      <header className="p-4" />
+      <div className="pb-4">
+        <Header />
+      </div>
       <div className="min-h-screen flex flex-col items-center justify-start p-4 gap-10">
         <div className="flex flex-col items-center justify-center bg-white bg-opacity-80 backdrop-blur-2xl p-6 rounded-md shadow-md">
           <h1>CSV upload:</h1>
@@ -169,7 +173,9 @@ export default function UploadProducts() {
           >
             {loading ? "Procesare..." : "Selectează fișier CSV"}
           </Button>
-          <p className={`mt-2 font-semibold px-4 py-2 ${statusColor}`}>{status}</p>
+          <p className={`mt-2 font-semibold px-4 py-2 ${statusColor}`}>
+            {status}
+          </p>
         </div>
         <div className="flex flex-wrap gap-6 justify-center mt-8">
           {previewProducts.map((product, index) => (

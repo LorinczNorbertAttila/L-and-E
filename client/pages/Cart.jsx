@@ -22,6 +22,7 @@ export default function Cart() {
     );
   }, [cart]);
 
+
   const handleQuantityChange = async (item, newQuantity) => {
     if (isNaN(newQuantity) || newQuantity < 0) return;
     const difference = newQuantity - item.quantity;
@@ -148,13 +149,39 @@ export default function Cart() {
                   <span className="font-semibold">{total.toFixed(2)} RON</span>
                 </div>
                 {currentUser ? (
-                  <Button
-                    type="submit"
-                    onClick={handlePlaceOrder}
-                    className="bg-teal-800 text-white py-2 px-4 rounded-lg mt-4 w-full"
-                  >
-                    {isPlacingOrder ? "Se procesează..." : "Trimite comanda"}
-                  </Button>
+                  <>
+                    <Button
+                      type="submit"
+                      onClick={handlePlaceOrder}
+                      disabled={
+                        isPlacingOrder ||
+                        !currentUser?.tel ||
+                        !currentUser?.address
+                      }
+                      className="bg-teal-800 text-white py-2 px-4 rounded-lg mt-4 w-full"
+                    >
+                      {isPlacingOrder ? "Se procesează..." : "Trimite comanda"}
+                    </Button>
+                    {/*Validation of phone number and address*/}
+                    {(!currentUser?.tel || !currentUser?.address) && (
+                      <p className="text-red-600 text-sm mt-2 text-center">
+                        Te rugăm să completezi{" "}
+                        {!currentUser?.tel && !currentUser?.address
+                          ? "numărul de telefon și adresa"
+                          : !currentUser?.tel
+                          ? "numărul de telefon"
+                          : "adresa"}{" "}
+                        în secțiunea{" "}
+                        <Link
+                          to="/profile"
+                          className="underline text-red-700 font-medium"
+                        >
+                          profil
+                        </Link>{" "}
+                        pentru a putea finaliza comanda.
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <Link to="/sign-in">
                     <Button

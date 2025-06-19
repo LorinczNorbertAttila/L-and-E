@@ -1,9 +1,18 @@
 import admin from "firebase-admin";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import fs from "fs";
+import path from "path";
 
-const serviceAccountPath = resolve("./firebase/adminsdk.json");
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf-8"));
+let serviceAccount;
+const renderSecretPath = "/etc/secrets/adminsdk.json";
+const localPath = path.resolve("firebase", "adminsdk.json");
+
+if (fs.existsSync(renderSecretPath)) {
+  // On Render, secret file
+  serviceAccount = JSON.parse(fs.readFileSync(renderSecretPath, "utf8"));
+} else {
+  // Local run
+  serviceAccount = JSON.parse(fs.readFileSync(localPath, "utf8"));
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -11,7 +20,6 @@ if (!admin.apps.length) {
   });
 }
 
-// Initialize Firestore
 const db = admin.firestore();
 
 export { admin, db };

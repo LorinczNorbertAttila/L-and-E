@@ -1,5 +1,14 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -13,8 +22,16 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-initializeApp(firebaseConfig); //initialize Firebase
+const app = initializeApp(firebaseConfig); //initialize Firebase
 
-export const auth = getAuth(); //object for use in authentication operations
+export const auth = getAuth(app); //object for use in authentication operations
 export const provider = new GoogleAuthProvider(); //Google Auth Provider instance for use in Google sign-in operations
-export const storage = getStorage(); //storage for images
+export const storage = getStorage(app); //storage for images
+export {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+};

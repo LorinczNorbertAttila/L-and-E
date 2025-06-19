@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth } from "../../../firebase/firebase";
+import { auth, onAuthStateChanged } from "../../../firebase/firebase";
 import { X } from "lucide-react";
-import { onAuthStateChanged } from "firebase/auth";
 import { Dialog, DialogBody, IconButton } from "@material-tailwind/react";
 
 // Create a context for the cart

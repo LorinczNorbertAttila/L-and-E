@@ -167,6 +167,12 @@ router.post("/upload", async (req, res) => {
             if (existingData.description !== product.description) {
               updateData.description = product.description;
             }
+            if (
+              product.imageUrl &&
+              existingData.imageUrl !== product.imageUrl
+            ) {
+              updateData.imageUrl = product.imageUrl;
+            }
 
             await docRef.update(updateData);
             updatedCount++;

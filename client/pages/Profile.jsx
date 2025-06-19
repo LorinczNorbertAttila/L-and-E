@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../src/components/Header";
-import { Pencil, Save, X } from "lucide-react";
+import { Pencil, X, Camera } from "lucide-react";
 import {
   Button,
   IconButton,
@@ -15,6 +15,7 @@ import {
   DialogFooter,
   Avatar,
 } from "@material-tailwind/react";
+import { uploadProfilePicture } from "../../firebase/storage";
 import countiesData from "../src/assets/json/judete.json"; //Counties and cities json
 
 const ERROR_MESSAGES = {
@@ -26,7 +27,14 @@ const ERROR_MESSAGES = {
   invalidAddress: "Adresa trebuie să conțină cel puțin 5 caractere.",
 };
 
-function LocationSelector({ label, options, value, onChange, error, disabled }) {
+function LocationSelector({
+  label,
+  options,
+  value,
+  onChange,
+  error,
+  disabled,
+}) {
   return (
     <div className="w-full sm:w-1/2 sm:pr-2">
       <h2 className="mb-2 px-2">{label}</h2>
@@ -63,6 +71,10 @@ export default function Profile() {
   const [countyError, setCountyError] = useState("");
   const [cityError, setCityError] = useState("");
   const navigate = useNavigate();
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageError, setImageError] = useState("");
+  const [previewURL, setPreviewURL] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const countyOptions = useMemo(() => {
     return countiesData.judete.map((county) => ({
@@ -117,11 +129,9 @@ export default function Profile() {
       await setField("users", currentUser.uid, "tel", phoneNumber); // Set the phone number
 
       // Update the `currentUser` object locally to reflect the new phone number
-      setCurrentUser({
-        ...currentUser,
-        tel: phoneNumber, // Update the local user object with the new phone number
-      });
-
+      const updatedUser = { ...currentUser, tel: phoneNumber };
+      setCurrentUser(updatedUser);
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
       setShowPhoneInput(false); // Hide the input field after saving
     } catch (error) {
       setPhoneError(ERROR_MESSAGES.savePhoneError + error.message); // Set error message if failed
@@ -153,7 +163,10 @@ export default function Profile() {
       setLoading(true);
       const fullAddress = `${address}, ${selectedCity}, jud. ${selectedCounty}`;
       await setField("users", currentUser.uid, "address", fullAddress);
-      setCurrentUser({ ...currentUser, address: fullAddress });
+      const updatedUser = { ...currentUser, address: fullAddress };
+      setCurrentUser(updatedUser);
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
       setAddressInput(false);
 
       // Reset the state values after saving
@@ -183,11 +196,19 @@ export default function Profile() {
             <h3 className="text-lg leading-6 font-medium text-gray-900">
               Datele contului
             </h3>
-            <Avatar
-              src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
-              size="xl"
-              alt="profile"
-            />
+            <div className="relative group">
+              <Avatar
+                src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
+                size="xl"
+                alt="profile"
+              />
+              <div
+                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer"
+                onClick={() => setShowImageModal(true)}
+              >
+                <Camera className="text-white w-6 h-6" />
+              </div>
+            </div>
           </div>
           <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl className="sm:divide-y sm:divide-gray-200">
@@ -243,7 +264,10 @@ export default function Profile() {
                         <span>{currentUser?.tel}</span>
                         <button
                           data-testid="modify-phone"
-                          onClick={() => setShowPhoneInput(true)}
+                          onClick={() => {
+                            setPhoneNumber(currentUser?.tel || "");
+                            setShowPhoneInput(true);
+                          }}
                           className="text-teal-800 ml-6"
                         >
                           <Pencil />
@@ -294,7 +318,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/*Modal*/}
+      {/*Address Modal*/}
       <Dialog
         open={showAddressInput}
         handler={closeModal}
@@ -344,7 +368,7 @@ export default function Profile() {
             <DialogFooter className="mt-2 flex justify-center">
               <Button
                 size="sm"
-                onClick={handleAddress}
+                type="submit"
                 disabled={loading}
                 className="bg-teal-800 text-white rounded-md"
               >
@@ -353,6 +377,83 @@ export default function Profile() {
             </DialogFooter>
           </form>
         </DialogBody>
+      </Dialog>
+
+      {/*Image Modal*/}
+      <Dialog open={showImageModal} handler={() => setShowImageModal(false)}>
+        <DialogHeader>
+          Schimbă poza de profil{" "}
+          <IconButton
+            variant="text"
+            onClick={() => {
+              setPreviewURL(null);
+              setSelectedImage(null);
+              setShowImageModal(false);
+            }}
+            className="!absolute top-2 right-2 text-teal-800"
+          >
+            <X />
+          </IconButton>
+        </DialogHeader>
+        <DialogBody>
+          {imageError && (
+            <p className="text-red-600 text-sm mt-2">{imageError}</p>
+          )}
+          {previewURL && (
+            <img
+              src={previewURL}
+              alt="Preview"
+              className="rounded-full mx-auto w-40 h-40 object-cover"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setSelectedImage(file);
+                setPreviewURL(URL.createObjectURL(file));
+              }
+            }}
+            className="mt-4"
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            className="bg-teal-800 text-white"
+            disabled={!selectedImage || loading}
+            onClick={async () => {
+              if (!selectedImage) return;
+              setLoading(true);
+              setImageError("");
+              try {
+                const url = await uploadProfilePicture(
+                  currentUser.uid,
+                  selectedImage
+                );
+                const updatedUser = { ...currentUser, img: url };
+                await setField("users", currentUser.uid, "img", url);
+                setCurrentUser(updatedUser);
+                localStorage.setItem(
+                  "currentUser",
+                  JSON.stringify(updatedUser)
+                );
+                setPreviewURL(null);
+                setSelectedImage(null);
+                setShowImageModal(false);
+              } catch (err) {
+                setImageError(
+                  "Eroare la încărcarea imaginii de profil: " +
+                    (err?.message || err)
+                );
+              }
+              setLoading(false);
+            }}
+          >
+            Salvează
+          </Button>
+        </DialogFooter>
       </Dialog>
     </>
   );

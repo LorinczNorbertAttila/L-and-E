@@ -184,7 +184,7 @@ router.patch("/set-field", async (req, res) => {
   const { collection, id, field, value } = req.body;
 
   const allowedCollections = ["users", "products"];
-  const allowedFields = ["tel", "address", "cart"];
+  const allowedFields = ["tel", "address", "cart", "img"];
 
   if (
     !allowedCollections.includes(collection) ||

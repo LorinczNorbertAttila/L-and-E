@@ -1,10 +1,10 @@
 import React, { useState, useRef } from "react";
-import { getAuth } from "firebase/auth";
 import Header from "../src/components/Header";
 import EditableProductCard from "../src/components/EditableProductCard";
 import { useCategory } from "../src/contexts/CategoryContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Button } from "@material-tailwind/react";
+import { uploadProductImage } from "../../firebase/storage";
 
 export default function UploadProducts() {
   const [status, setStatus] = useState("");
@@ -13,6 +13,8 @@ export default function UploadProducts() {
   const [loading, setLoading] = useState(false);
   const { categories } = useCategory();
   const { firebaseUser } = useAuth();
+  const [csvErrors, setCsvErrors] = useState([]);
+  const [imageUploadErrors, setImageUploadErrors] = useState([]);
 
   const fileInputRef = useRef();
 
@@ -30,6 +32,7 @@ export default function UploadProducts() {
       setLoading(true);
       setStatusType("info");
       setStatus("Procesare...");
+      setCsvErrors([]);
       if (!firebaseUser) throw new Error("Neautentificat");
 
       const token = await firebaseUser.getIdToken();
@@ -55,11 +58,13 @@ export default function UploadProducts() {
       } else {
         setStatusType("error");
         setStatus(data.error || "A apărut o eroare");
+        setCsvErrors(data.errors || []);
       }
     } catch (err) {
       console.error(err);
       setStatusType("error");
       setStatus("Eroare: " + err.message);
+      setCsvErrors([]);
     } finally {
       setLoading(false);
     }
@@ -85,12 +90,42 @@ export default function UploadProducts() {
       setStatus("Eroare: Verifică câmpurile obligatorii.");
       return;
     }
-
+    setImageUploadErrors([]);
     try {
       setLoading(true);
       setStatusType("info");
       setStatus("Salvare în curs...");
       const token = await firebaseUser.getIdToken();
+
+      const updatedProducts = [];
+      const imageErrors = [];
+
+      for (const product of previewProducts) {
+        if (product.selectedImageFile) {
+          try {
+            const url = await uploadProductImage(product.selectedImageFile);
+            updatedProducts.push({
+              ...product,
+              imageUrl: url,
+              selectedImageFile: null,
+            });
+          } catch (err) {
+            imageErrors.push({
+              name: product.name,
+              message:
+                err.message || "Eroare necunoscută la încărcarea imaginii",
+            });
+            updatedProducts.push({
+              ...product,
+              imageUrl: "",
+              selectedImageFile: null,
+            });
+          }
+        } else {
+          updatedProducts.push(product);
+        }
+      }
+      setImageUploadErrors(imageErrors);
 
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/products/upload`,
@@ -100,7 +135,7 @@ export default function UploadProducts() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ products: previewProducts }),
+          body: JSON.stringify({ products: updatedProducts }),
         }
       );
 
@@ -112,8 +147,15 @@ export default function UploadProducts() {
             .map((e) => e.id)
             .join(", ")}.`;
         }
+        if (imageErrors.length > 0) {
+          msg += `\n Imagini care nu au putut fi încărcate: ${imageErrors
+            .map((e) => e.name)
+            .join(", ")}.`;
+        }
         setStatusType(
-          data.errors && data.errors.length > 0 ? "error" : "success"
+          (data.errors && data.errors.length > 0) || imageErrors.length > 0
+            ? "error"
+            : "success"
         );
         setStatus(msg);
         setPreviewProducts([]);
@@ -176,6 +218,38 @@ export default function UploadProducts() {
           <p className={`mt-2 font-semibold px-4 py-2 ${statusColor}`}>
             {status}
           </p>
+          {csvErrors.length > 0 && (
+            <div className="mt-2 bg-red-50 border border-red-200 rounded p-2 text-sm text-red-700">
+              <div className="font-bold mb-1">
+                Erori la procesarea CSV-ului:
+              </div>
+              <ul className="list-disc pl-5">
+                {csvErrors.map((err, idx) => (
+                  <li key={idx}>
+                    {typeof err === "string"
+                      ? err
+                      : `Linia ${err.row ?? "?"}: ${
+                          err.message ?? JSON.stringify(err)
+                        }`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {imageUploadErrors.length > 0 && (
+            <div className="mt-2 bg-red-50 border border-red-200 rounded p-2 text-sm text-red-700">
+              <div className="font-bold mb-1">
+                Erori la încărcarea imaginilor:
+              </div>
+              <ul className="list-disc pl-5">
+                {imageUploadErrors.map((err, idx) => (
+                  <li key={idx}>
+                    {err.name ? <b>{err.name}:</b> : null} {err.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-6 justify-center mt-8">
           {previewProducts.map((product, index) => (

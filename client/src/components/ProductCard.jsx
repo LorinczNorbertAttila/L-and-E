@@ -60,7 +60,7 @@ export default function ProductCard({ product }) {
               <img
                 src={product.imageUrl}
                 alt={product.name}
-                className="object-contain h-full group-hover:scale-110 transition-transform"
+                className="object-contain h-full transform scale-95 group-hover:scale-100 transition-transform"
               />
             ) : (
               <div className="text-gray-400 text-sm">Imagine indisponibilă</div>

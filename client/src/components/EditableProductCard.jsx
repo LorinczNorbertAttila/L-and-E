@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardBody,
@@ -17,8 +17,22 @@ export default function EditableProductCard({
   categories,
 }) {
   const [errors, setErrors] = useState({});
+  const [previewURL, setPreviewURL] = useState(product.imageUrl || "");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const fileInputRef = useRef(null);
 
-  // Ellenőrzés minden változáskor
+  // preview image
+  useEffect(() => {
+    if (selectedImage) {
+      const objectUrl = URL.createObjectURL(selectedImage);
+      setPreviewURL(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    } else {
+      setPreviewURL(product.imageUrl || "");
+    }
+  }, [selectedImage, product.imageUrl]);
+
+  // Verification
   useEffect(() => {
     const newErrors = {};
     if (!product.name?.trim()) newErrors.name = "Numele este obligatoriu.";
@@ -31,18 +45,39 @@ export default function EditableProductCard({
     setErrors(newErrors);
   }, [product]);
 
+  //Change handleing
   const handleChange = (field, value) => {
     onChange(index, { ...product, [field]: value });
   };
 
+  // File select
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedImage(file);
+    // no Firebase save, only change it locally
+    onChange(index, {
+      ...product,
+      imageUrl: "",
+      selectedImageFile: file,
+    });
+  };
+
+  const onImageClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <Card className="bg-white bg-opacity-90 p-4 w-80 shadow-md">
-      {/* Previzualizare imagine */}
-      <CardHeader className="h-40 flex justify-center">
+      {/* Image preview */}
+      <CardHeader className="h-40 flex justify-center" onClick={onImageClick}>
         <img
-          src={product.imageUrl || ""}
-          alt={product.name}
-          className="object-contain h-full"
+          src={previewURL}
+          alt={product.name || "Imagine produs"}
+          className="object-contain h-full cursor-pointer"
+          style={{ userSelect: "none" }}
         />
       </CardHeader>
 
@@ -58,7 +93,7 @@ export default function EditableProductCard({
         </div>
         <Input
           label="Greutate"
-          value={product.mass}
+          value={product.mass ?? ""}
           onChange={(e) => handleChange("mass", e.target.value)}
         />
         <div>
@@ -99,8 +134,16 @@ export default function EditableProductCard({
         </div>
         <Input
           label="Descriere"
-          value={product.description}
+          value={product.description ?? ""}
           onChange={(e) => handleChange("description", e.target.value)}
+        />
+        {/* Hidden file input */}
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          style={{ display: "none" }}
         />
         <div>
           <Select

@@ -24,4 +24,5 @@ dist-ssr
 *.sw?
 client/.env
 .env
-firebase/adminsdk.json
+
+client/src/firebase/adminsdk.json

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth, onAuthStateChanged } from "../../../firebase/firebase";
+import { auth, onAuthStateChanged } from "..//firebase/firebase";
 import { X } from "lucide-react";
 import { Dialog, DialogBody, IconButton } from "@material-tailwind/react";
 

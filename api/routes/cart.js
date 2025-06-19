@@ -1,6 +1,5 @@
 import express from "express";
-import { db } from "../../firebase/firebase_admin.js";
-import admin from "firebase-admin";
+import { db, admin } from "../../client/src/firebase/firebase_admin.js";
 const router = express.Router();
 
 // Helper function to validate IDs

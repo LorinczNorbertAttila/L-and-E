@@ -1,5 +1,5 @@
 import express from "express";
-import { admin, db } from "../../firebase/firebase_admin.js";
+import { admin, db } from "../../client/src/firebase/firebase_admin.js";
 import multer from "multer";
 import os from "os";
 import csv from "csv-parser";

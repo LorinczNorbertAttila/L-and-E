@@ -3,7 +3,7 @@ import { auth, provider, createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signOut, } from "../../../firebase/firebase";
+  signOut, } from "../firebase/firebase";
 import { useCart } from "../contexts/CartContext";
 
 // Create a context for authentication

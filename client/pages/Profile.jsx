@@ -15,7 +15,7 @@ import {
   DialogFooter,
   Avatar,
 } from "@material-tailwind/react";
-import { uploadProfilePicture } from "../../firebase/storage";
+import { uploadProfilePicture } from "../src/firebase/storage";
 import countiesData from "../src/assets/json/judete.json"; //Counties and cities json
 
 const ERROR_MESSAGES = {

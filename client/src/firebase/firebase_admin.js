@@ -4,7 +4,7 @@ import path from "path";
 
 let serviceAccount;
 const renderSecretPath = "/etc/secrets/adminsdk.json";
-const localPath = path.resolve("firebase", "adminsdk.json");
+const localPath = path.resolve(process.cwd(), "client", "src", "firebase", "adminsdk.json");
 
 if (fs.existsSync(renderSecretPath)) {
   // On Render, secret file

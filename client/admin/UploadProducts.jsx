@@ -4,7 +4,7 @@ import EditableProductCard from "../src/components/EditableProductCard";
 import { useCategory } from "../src/contexts/CategoryContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Button } from "@material-tailwind/react";
-import { uploadProductImage } from "../../firebase/storage";
+import { uploadProductImage } from "../src/firebase/storage";
 
 export default function UploadProducts() {
   const [status, setStatus] = useState("");

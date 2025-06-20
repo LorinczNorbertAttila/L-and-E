@@ -104,10 +104,11 @@ export default function UploadProducts() {
         if (product.selectedImageFile) {
           try {
             const url = await uploadProductImage(product.selectedImageFile);
+            //Filter the selectedImage field, no need in Firestore
+            const { selectedImageFile, ...cleanProduct } = product;
             updatedProducts.push({
-              ...product,
+              ...cleanProduct,
               imageUrl: url,
-              selectedImageFile: null,
             });
           } catch (err) {
             imageErrors.push({
@@ -115,14 +116,15 @@ export default function UploadProducts() {
               message:
                 err.message || "Eroare necunoscută la încărcarea imaginii",
             });
+            const { selectedImageFile, ...cleanProduct } = product;
             updatedProducts.push({
-              ...product,
+              ...cleanProduct,
               imageUrl: "",
-              selectedImageFile: null,
             });
           }
         } else {
-          updatedProducts.push(product);
+          const { selectedImageFile, ...cleanProduct } = product;
+          updatedProducts.push(cleanProduct);
         }
       }
       setImageUploadErrors(imageErrors);

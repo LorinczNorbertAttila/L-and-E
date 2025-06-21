@@ -6,6 +6,11 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { Button } from "@material-tailwind/react";
 import { uploadProductImage } from "../src/firebase/storage";
 
+// Helper function: removes fields with null values from an object
+function removeNullFields(obj) {
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== null));
+}
+
 export default function UploadProducts() {
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("info"); // "info" | "success" | "error"
@@ -106,10 +111,12 @@ export default function UploadProducts() {
             const url = await uploadProductImage(product.selectedImageFile);
             //Filter the selectedImage field, no need in Firestore
             const { selectedImageFile, ...cleanProduct } = product;
-            updatedProducts.push({
-              ...cleanProduct,
-              imageUrl: url,
-            });
+            updatedProducts.push(
+              removeNullFields({
+                ...cleanProduct,
+                imageUrl: url,
+              })
+            );
           } catch (err) {
             imageErrors.push({
               name: product.name,
@@ -117,14 +124,16 @@ export default function UploadProducts() {
                 err.message || "Eroare necunoscută la încărcarea imaginii",
             });
             const { selectedImageFile, ...cleanProduct } = product;
-            updatedProducts.push({
-              ...cleanProduct,
-              imageUrl: "",
-            });
+            updatedProducts.push(
+              removeNullFields({
+                ...cleanProduct,
+                imageUrl: url,
+              })
+            );
           }
         } else {
           const { selectedImageFile, ...cleanProduct } = product;
-          updatedProducts.push(cleanProduct);
+          updatedProducts.push(removeNullFields(cleanProduct));
         }
       }
       setImageUploadErrors(imageErrors);

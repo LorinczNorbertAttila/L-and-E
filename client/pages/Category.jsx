@@ -92,7 +92,10 @@ const FilterDrawer = React.memo(function FilterDrawer({
         </IconButton>
       </div>
 
-      <div className="flex flex-col">
+      <div
+        className="flex flex-col"
+        style={{ maxHeight: "60vh", overflowY: "auto" }}
+      >
         <h6 className="mb-2">Disponibilitate:</h6>
         <Checkbox
           label="În stoc"
@@ -100,15 +103,17 @@ const FilterDrawer = React.memo(function FilterDrawer({
           onChange={(e) => setLocalShowInStockOnly(e.target.checked)}
         />
         <h6 className="mb-2">Greutate:</h6>
-        {availableMasses.map((mass, idx) => (
-          <Checkbox
-            key={`${mass}-${idx}`}
-            checked={localMasses.includes(mass)}
-            onChange={() => toggleMass(mass)}
-            className="hover:before:content-none p-0"
-            label={mass}
-          />
-        ))}
+        {availableMasses
+          .filter((mass) => mass !== null && mass !== undefined && mass != "")
+          .map((mass, idx) => (
+            <Checkbox
+              key={`${mass}-${idx}`}
+              checked={localMasses.includes(mass)}
+              onChange={() => toggleMass(mass)}
+              className="hover:before:content-none p-0"
+              label={mass}
+            />
+          ))}
         <h6 className="mt-4 mb-1">Preț maxim (RON):</h6>
         <div className="flex flex-col gap-2">
           <div className="flex justify-between text-sm text-gray-700 px-1">

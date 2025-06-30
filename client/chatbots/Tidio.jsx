@@ -1,17 +1,17 @@
-import React, { useEffect } from 'react'
+import React, { useEffect } from "react";
 
 const TidioChat = () => {
-    useEffect(() => {
-    const script = document.createElement('script')
-    script.src = '//code.tidio.co/atok5qdjfa1sbpykbvzwjiijdlkp1dcv.js'
-    script.async = true
-    document.body.appendChild(script)
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = import.meta.env.VITE_TIDIO_SCRIPT;
+    script.async = true;
+    document.body.appendChild(script);
     return () => {
-        document.body.removeChild(script)
-      }
-    }, [])
-  
-    return null
-  }
+      document.body.removeChild(script);
+    };
+  }, []);
 
-  export default TidioChat
+  return null;
+};
+
+export default TidioChat;

@@ -25,7 +25,7 @@ import {
 import logo from "../assets/images/lande.png";
 
 export default function Header() {
-  const { currentUser, firebaseUser, logout } = useAuth();
+  const { currentUser, isAdmin, logout } = useAuth();
   const { cart } = useCart();
   const { categories } = useCategory();
   const [animate, setAnimate] = useState(false);
@@ -33,24 +33,6 @@ export default function Header() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!firebaseUser) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const token = await firebaseUser.getIdTokenResult();
-        setIsAdmin(token.claims.admin === true);
-      } catch (e) {
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-  }, [firebaseUser]);
 
   // Memoized calculation of the total number of items in the cart
   const itemCount = React.useMemo(

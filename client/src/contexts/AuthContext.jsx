@@ -21,6 +21,7 @@ export default function AuthProvider({ children }) {
   const [favorites, setFavorites] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { refreshCart } = useCart();
 
   // Create new user in Firestore
@@ -33,6 +34,23 @@ export default function AuthProvider({ children }) {
     const result = await res.json();
     if (!res.ok || !result.success) throw new Error("User creation failed");
   }
+
+  useEffect(() => {
+      const checkAdmin = async () => {
+        if (!firebaseUser) {
+          setIsAdmin(false);
+          return;
+        }
+        try {
+          const token = await firebaseUser.getIdTokenResult();
+          setIsAdmin(token.claims.admin === true);
+        } catch (e) {
+          setIsAdmin(false);
+        }
+      };
+  
+      checkAdmin();
+    }, [firebaseUser]);
 
   // Merge cart items from localStorage with Firestore
   async function mergeCartWithFirestore(uid) {
@@ -266,6 +284,7 @@ export default function AuthProvider({ children }) {
     () => ({
       currentUser,
       setCurrentUser,
+      isAdmin,
       firebaseUser,
       signup,
       login,

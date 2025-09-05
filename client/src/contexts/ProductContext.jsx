@@ -1,3 +1,4 @@
+import { getAuth } from "firebase/auth";
 import React, { useContext, useState, useEffect } from "react";
 
 // Function to get random products from a list
@@ -58,8 +59,40 @@ export default function ProductProvider({ children }) {
     setRandomProductsByCategory(newRandomProducts);
   }, [products]);
 
+  // Remove an item from the cart
+    async function deleteProduct(productId) {
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        const idToken = currentUser ? await currentUser.getIdToken() : null;
+
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/products/${productId}`,
+          {
+            method: "DELETE",
+            headers: {
+              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Failed to delete product: ${response.status} ${text}`);
+        }
+
+        // Update local state to remove the deleted product
+        setProducts((prevProducts) =>
+          prevProducts.filter((product) => product.id !== productId)
+        );
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        throw error;
+      }
+    }
+
   return (
-    <ProductContext.Provider value={{ products, getProductsForCategory }}>
+    <ProductContext.Provider value={{ products, getProductsForCategory, deleteProduct }}>
       {children}
     </ProductContext.Provider>
   );

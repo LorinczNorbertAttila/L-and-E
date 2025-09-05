@@ -3,6 +3,7 @@ import { X, Heart } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useProduct } from "../contexts/ProductContext";
 import {
   IconButton,
   Dialog,
@@ -11,10 +12,12 @@ import {
   Button,
 } from "@material-tailwind/react";
 
+
 export default function ProductModal({ open, onClose, product }) {
   const { categories } = useCategory();
   const { addToCart } = useCart();
-  const { favorites, addToFavorites, removeFromFavorites } = useAuth();
+  const { favorites, addToFavorites, removeFromFavorites, isAdmin } = useAuth();
+  const { deleteProduct } = useProduct();
   const [cartLoading, setCartLoading] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
@@ -41,6 +44,7 @@ export default function ProductModal({ open, onClose, product }) {
     }
   };
 
+  // Handles adding/removing the product from favorites
   const handleFavoriteToggle = async () => {
     setFavoriteLoading(true);
     try {
@@ -55,6 +59,18 @@ export default function ProductModal({ open, onClose, product }) {
       setFavoriteLoading(false);
     }
   };
+
+  // Handles deleting the product
+  const handleDeleteProduct = async (productId) => {
+    setCartLoading(true);
+    try {
+      await deleteProduct(productId);
+      onClose();
+    } catch (err) {
+      console.error("Error deleting product:", err);
+    } finally {
+      setCartLoading(false);
+    } };
 
   return (
     <Dialog open={open} handler={onClose} aria-labelledby="modal-title">
@@ -115,6 +131,20 @@ export default function ProductModal({ open, onClose, product }) {
             >
               Favorite <Heart fill={isFavorite ? "red" : "none"} />
             </Button>
+            {isAdmin && (
+            <Button
+              disabled={product.quantity === 0 || cartLoading}
+              size="sm"
+              onClick={() => handleDeleteProduct(product.id)}
+              className={`${
+                product.quantity === 0
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-red-600 hover:bg-black"
+              }`}
+            >
+              Șterge produs
+            </Button>
+            )}
           </div>
         </div>
       </DialogBody>

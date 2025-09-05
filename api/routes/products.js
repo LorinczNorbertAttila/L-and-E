@@ -200,4 +200,28 @@ router.post("/upload", async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/products/:id
+ * Deletes a product by id from the Firestore "products" collection
+ */
+router.delete("/:id", async (req, res) => {
+  const authHeader = req.headers.authorization || "";
+  const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const { id } = req.params;
+  if (!idToken || !id) {
+    return res.status(400).json({ error: "Missing token or product id" });
+  }
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    if (!decoded.admin) {
+      return res.status(403).json({ error: "Not admin" });
+    }
+    await db.collection("products").doc(id).delete();
+    res.status(200).json({ success: true, message: "Product deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete product" });
+  }
+});
+
 export default router;

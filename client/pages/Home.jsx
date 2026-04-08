@@ -12,12 +12,6 @@ import ProductModal from "../src/components/ProductModal";
 import carouselImg1 from "../src/assets/images/fb_LandE.jpg";
 import carouselImg2 from "../src/assets/images/Parteneri.png";
 import carouselImg3 from "../src/assets/images/Carousel_LandE.png";
-import BotpressChat from "../chatbots/BotPress";
-import TidioChat from "../chatbots/Tidio";
-import FreshChat from "../chatbots/FreshChat";
-import CrispChat from "../chatbots/Crisp";
-import TawkToChat from "../chatbots/Tawk_to";
-import ZapierChat from "../chatbots/Zapier";
 
 // Custom navigation for the carousel
 const renderCarouselNavigation = ({ setActiveIndex, activeIndex, length }) => (

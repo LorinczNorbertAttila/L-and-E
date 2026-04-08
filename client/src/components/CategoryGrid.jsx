@@ -4,7 +4,7 @@ export default function CategoryGrid({ products }) {
   const hasProducts = products?.length > 0;
   return (
     <div
-      className={`flex flex-wrap justify-center items-center p-10 gap-16 ${
+      className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 justify-items-center p-16 gap-16 ${
         !hasProducts ? "flex-grow" : ""
       }`}
     >

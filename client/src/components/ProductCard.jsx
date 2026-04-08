@@ -48,13 +48,13 @@ export default function ProductCard({ product }) {
     <>
       {/* Product Card */}
       <Card
-        className="bg-white bg-opacity-50 cursor-pointer md:w-64 w-48 h-auto group"
+        className="bg-white bg-opacity-50 cursor-pointer lg:w-64 w-48 h-full flex flex-col group"
         onClick={handleOpen}
         role="button"
         tabIndex={0}
       >
         {/* Product Image */}
-        <CardHeader className="md:h-48 h-32 flex justify-center">
+        <CardHeader className="lg:h-48 h-32 flex justify-center flex-shrink-0">
            <div className="w-full flex justify-center items-center bg-white border rounded-md">
             {product.imageUrl ? (
               <img
@@ -69,15 +69,15 @@ export default function ProductCard({ product }) {
         </CardHeader>
 
         {/* Product Details */}
-        <CardBody className="relative">
-          <h1 className="text-xl font-bold leading-tight text-gray-900">
+        <CardBody className="relative flex-1 flex flex-col lg:h-56 h-48 justify-between">
+          <h1 className="text-xl font-bold leading-tight text-gray-900 line-clamp-2">
             {product.name}
           </h1>
-          <p className="mt-2 text-gray-800">{categoryLabel}</p>
-          <p className="mt-2 text-gray-800">{product.mass}</p>
-          <p className="mt-2 text-teal-800 font-extrabold">
-            {product.price} RON
-          </p>
+          <div className="space-y-1">
+            <p className="text-gray-800 text-sm">{categoryLabel}</p>
+            <p className="text-gray-800 text-sm">{product.mass || "-"}</p>
+            <p className="text-teal-800 font-extrabold">{product.price} RON</p>
+          </div>
 
           {/* Add to Cart Button */}
           <IconButton
@@ -101,7 +101,7 @@ export default function ProductCard({ product }) {
       </Card>
 
       {/* Product Details Modal */}
-      <ProductModal open={open} onClose={closeModal} product={product} />
+      <ProductModal key={`modal-${product.id}`} open={open} onClose={closeModal} product={product} />
     </>
   );
 }

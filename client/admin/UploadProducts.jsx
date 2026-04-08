@@ -76,7 +76,7 @@ export default function UploadProducts() {
   };
 
   const handleFinalSave = async () => {
-    const hasInvalidProduct = previewProducts.some((p) => {
+    const invalidProducts = previewProducts.filter((p) => {
       return (
         !p.name?.trim() ||
         p.price === "" ||
@@ -90,9 +90,10 @@ export default function UploadProducts() {
       );
     });
 
-    if (hasInvalidProduct) {
+    if (invalidProducts.length > 0) {
       setStatusType("error");
-      setStatus("Eroare: Verifică câmpurile obligatorii.");
+      const productNames = invalidProducts.map(p => p.name).join(", ");
+      setStatus(`Eroare: Verifică câmpurile obligatorii pentru: ${productNames}`);
       return;
     }
     setImageUploadErrors([]);

@@ -109,19 +109,18 @@ export default function ProductModal({ open, onClose, product }) {
           <p className="text-sm mb-8">
             {product.description ?? "Produsul momentan nu are descriere"}
           </p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Button
-              disabled={product.quantity === 0 || cartLoading}
-              size="sm"
-              onClick={handleCartClick}
-              className={`${
-                product.quantity === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-teal-800 hover:bg-black"
-              }`}
-            >
-              Adaugă în coș
-            </Button>
+          <div className="flex flex-wrap gap-2 mb-4 items-center">
+            {product.quantity === 0 ? (
+              <span className="text-sm font-semibold text-red-600">Indisponibil</span>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleCartClick}
+                className="bg-teal-800 hover:bg-black"
+              >
+                Adaugă în coș
+              </Button>
+            )}
             <Button
               disabled={favoriteLoading}
               size="sm"
@@ -133,14 +132,10 @@ export default function ProductModal({ open, onClose, product }) {
             </Button>
             {isAdmin && (
             <Button
-              disabled={product.quantity === 0 || cartLoading}
+              disabled={cartLoading}
               size="sm"
               onClick={() => handleDeleteProduct(product.id)}
-              className={`${
-                product.quantity === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-red-600 hover:bg-black"
-              }`}
+              className="bg-red-600 hover:bg-black"
             >
               Șterge produs
             </Button>

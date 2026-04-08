@@ -6,6 +6,7 @@ import { useCart } from "../src/contexts/CartContext";
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@material-tailwind/react";
+import ProductModal from "../src/components/ProductModal";
 
 export default function Favorites() {
   const { favorites = [], removeFromFavorites } = useAuth();
@@ -14,6 +15,7 @@ export default function Favorites() {
   const [loadingCartId, setLoadingCartId] = useState(null);
   const [loadingFavoriteId, setLoadingFavoriteId] = useState(null);
   const { addToCart } = useCart();
+  const [open, setOpen] = useState(false); // State for controlling modal visibility
 
   // Handles removing a product from favorites
   const handleRemoveFavorite = async (id) => {
@@ -41,6 +43,12 @@ export default function Favorites() {
     }
   };
 
+  // Open the modal
+  const handleOpen = () => setOpen(true);
+
+  // Close the modal
+  const closeModal = () => setOpen(false);
+
   return (
     <>
       <header className="p-4" />
@@ -58,9 +66,10 @@ export default function Favorites() {
               const category =
                 categories.find((c) => Number(c.id) === item.type) || {};
               return (
+                <div key={item.id} className="contents">
                 <div
-                  key={item.id}
-                  className="bg-white bg-opacity-85 rounded-md shadow-md flex relative"
+                  className="bg-white bg-opacity-85 cursor-pointer rounded-md shadow-md flex relative"
+                  onClick={handleOpen}
                 >
                   <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-md">
                     <img
@@ -81,20 +90,26 @@ export default function Favorites() {
                       {item.price} RON
                     </p>
                     <div className="absolute right-4 p-4 bottom-4 flex gap-2">
-                      <Button
-                        size="sm"
-                        aria-label="Adaugă în coș"
-                        disabled={loadingCartId === item.id}
-                        onClick={() => handleCartClick(item)}
-                        className="flex gap-2 items-center rounded-lg p-2 bg-teal-600 text-white hover:bg-teal-800"
-                      >
-                        <span className="hidden md:inline">
-                          {loadingCartId === item.id
-                            ? "Adăugare..."
-                            : "Adaugă în coș"}
+                      {item.quantity === 0 ? (
+                        <span className="flex gap-2 items-center text-sm font-semibold text-red-600">
+                          Indisponibil
                         </span>
-                        <ShoppingCart fill="white" className="relative" />
-                      </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          aria-label="Adaugă în coș"
+                          disabled={loadingCartId === item.id}
+                          onClick={() => handleCartClick(item)}
+                          className="flex gap-2 items-center rounded-lg p-2 bg-teal-600 text-white hover:bg-teal-800"
+                        >
+                          <span className="hidden md:inline">
+                            {loadingCartId === item.id
+                              ? "Adăugare..."
+                              : "Adaugă în coș"}
+                          </span>
+                          <ShoppingCart fill="white" className="relative" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         aria-label="Șterge din favorite"
@@ -109,6 +124,9 @@ export default function Favorites() {
                       </Button>
                     </div>
                   </div>
+                </div>
+                {/* Product Details Modal */}
+                <ProductModal key={`modal-${item.id}`} open={open} onClose={closeModal} product={item} />
                 </div>
               );
             })}

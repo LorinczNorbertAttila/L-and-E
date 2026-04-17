@@ -99,7 +99,7 @@ router.post("/create", async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       img: photoURL,
       tel: "",
-      address: "",
+      addressData: {},
       cart: [],
     });
 
@@ -184,7 +184,7 @@ router.patch("/set-field", async (req, res) => {
   const { collection, id, field, value } = req.body;
 
   const allowedCollections = ["users", "products"];
-  const allowedFields = ["tel", "address", "cart", "img"];
+  const allowedFields = ["tel", "addressData", "cart", "img"];
 
   if (
     !allowedCollections.includes(collection) ||
@@ -195,6 +195,33 @@ router.patch("/set-field", async (req, res) => {
       .json({ success: false, message: "Unauthorized field or collection" });
   }
 
+  // Validate value based on field type
+  if (
+    field === "addressData" &&
+    typeof value === "object"
+  ) {
+    const { county, city, address, postalCode } = value;
+    if (!county || !city || !address || !postalCode) {
+      return res.status(400).json({
+        success: false,
+        message: "All address fields are required",
+      });
+    }
+    if (!/^[0-9]{6}$/.test(postalCode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid postal code format",
+      });
+    }
+    // Add this
+    if (address.trim().length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Address must be at least 5 characters",
+      });
+    }
+  }
+
   try {
     const docRef = db.collection(collection).doc(id);
     await docRef.update({ [field]: value });
@@ -202,7 +229,9 @@ router.patch("/set-field", async (req, res) => {
     return res.status(200).json({ success: true, message: "Field updated" });
   } catch (error) {
     console.error("Error updating field:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update field" });
   }
 });
 

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../src/components/Header";
-import { Pencil, X, Camera } from "lucide-react";
+import { Pencil, X, Camera, ChevronDown } from "lucide-react";
 import {
   Button,
   IconButton,
@@ -16,7 +16,7 @@ import {
   Avatar,
 } from "@material-tailwind/react";
 import { uploadProfilePicture } from "../src/firebase/storage";
-import countiesData from "../src/assets/json/judete.json"; //Counties and cities json
+import countiesData from "../src/assets/json/countiesList.json"; //Counties and cities json
 
 const ERROR_MESSAGES = {
   selectCounty: "Vă rugăm să selectați un județ!",
@@ -24,7 +24,8 @@ const ERROR_MESSAGES = {
   saveAddressError: "Eroare la salvarea adresei",
   invalidPhoneNumber: "Numărul de telefon trebuie să conțină exact 10 cifre.",
   savePhoneError: "Nu s-a putut salva numărul de telefon: ",
-  invalidAddress: "Adresa trebuie să conțină cel puțin 5 caractere.",
+  invalidAddress: "Adresa invalidă. Vă rugăm să introduceți o adresă validă.",
+  invalidPostalCode: "Codul poștal trebuie să conțină exact 6 cifre.",
 };
 
 function LocationSelector({
@@ -35,10 +36,14 @@ function LocationSelector({
   error,
   disabled,
 }) {
+  const selectId = `select-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div className="w-full sm:w-1/2 sm:pr-2">
-      <h2 className="mb-2 px-2">{label}</h2>
+      <label htmlFor={selectId} className="mb-2 px-2 block text-sm font-medium">
+        {label}
+      </label>
       <Select
+        id={selectId}
         label={`Alege ${label.toLowerCase()}`}
         onChange={onChange}
         value={value}
@@ -66,10 +71,12 @@ export default function Profile() {
   const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [showAddressInput, setAddressInput] = useState(false);
   const [selectedCounty, setSelectedCounty] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(null);
+  const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [countyError, setCountyError] = useState("");
   const [cityError, setCityError] = useState("");
+  const [postalCodeError, setPostalCodeError] = useState("");
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageError, setImageError] = useState("");
@@ -77,26 +84,21 @@ export default function Profile() {
   const [showImageModal, setShowImageModal] = useState(false);
 
   const countyOptions = useMemo(() => {
-    return countiesData.judete.map((county) => ({
+    return countiesData.map((county) => ({
       label: county.nume,
       value: county.nume,
-      cities: county.localitati.map((city) => ({
-        label: city.nume,
-        value: city.nume,
-      })),
     }));
   }, []);
 
-  const [cityOptions, setCityOptions] = useState([]);
-
+  // Load saved address data when modal opens
   useEffect(() => {
-    // If the county changes, update the cities
-    if (selectedCounty) {
-      const county = countyOptions.find((c) => c.value === selectedCounty);
-      setCityOptions(county ? county.cities : []);
-      setSelectedCity(null); // Reset city when county changes
+    if (showAddressInput && currentUser?.addressData) {
+      setSelectedCounty(currentUser.addressData.county || null);
+      setCity(currentUser.addressData.city || "");
+      setAddress(currentUser.addressData.address || "");
+      setPostalCode(currentUser.addressData.postalCode || "");
     }
-  }, [selectedCounty, countyOptions]);
+  }, [showAddressInput, currentUser?.addressData]);
 
   const validatePhoneNumber = (number) => /^[0-9]{10}$/.test(number);
 
@@ -131,7 +133,11 @@ export default function Profile() {
       // Update the `currentUser` object locally to reflect the new phone number
       const updatedUser = { ...currentUser, tel: phoneNumber };
       setCurrentUser(updatedUser);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      try {
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      } catch (storageError) {
+        console.error("Failed to save to localStorage:", storageError);
+      }
       setShowPhoneInput(false); // Hide the input field after saving
     } catch (error) {
       setPhoneError(ERROR_MESSAGES.savePhoneError + error.message); // Set error message if failed
@@ -145,34 +151,49 @@ export default function Profile() {
     setCountyError("");
     setCityError("");
     setAddressError("");
+    setPostalCodeError("");
 
     if (!selectedCounty) {
       setCountyError(ERROR_MESSAGES.selectCounty);
       return;
     }
-    if (!selectedCity) {
+    if (!city) {
       setCityError(ERROR_MESSAGES.selectCity);
       return;
     }
-    if (address.trim().length < 5) {
+    if (address.trim().length < 1) {
       setAddressError(ERROR_MESSAGES.invalidAddress);
+      return;
+    }
+    if (!/^[0-9]{6}$/.test(postalCode)) {
+      setPostalCodeError(ERROR_MESSAGES.invalidPostalCode);
       return;
     }
 
     try {
       setLoading(true);
-      const fullAddress = `${address}, ${selectedCity}, jud. ${selectedCounty}`;
-      await setField("users", currentUser.uid, "address", fullAddress);
-      const updatedUser = { ...currentUser, address: fullAddress };
+      const addressData = {
+        county: selectedCounty,
+        city: city,
+        address: address,
+        postalCode: postalCode,
+      };
+      await setField("users", currentUser.uid, "addressData", addressData);
+      const updatedUser = { ...currentUser, addressData: addressData };
       setCurrentUser(updatedUser);
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      try {
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      } catch (storageError) {
+        console.error("Failed to save to localStorage:", storageError);
+      }
 
       setAddressInput(false);
 
       // Reset the state values after saving
       setSelectedCounty(null);
-      setSelectedCity(null);
+      setCity("");
       setAddress("");
+      setPostalCode("");
     } catch (error) {
       setAddressError(ERROR_MESSAGES.saveAddressError + ": " + error.message);
     } finally {
@@ -182,6 +203,15 @@ export default function Profile() {
 
   const closeModal = () => {
     setAddressInput(false);
+    // Reset the state values after closing
+    setSelectedCounty(null);
+    setCity("");
+    setAddress("");
+    setPostalCode("");
+    setCountyError("");
+    setCityError("");
+    setAddressError("");
+    setPostalCodeError("");
   };
 
   return (
@@ -235,10 +265,9 @@ export default function Profile() {
                           value={phoneNumber}
                           onChange={(e) => {
                             setPhoneError("");
-                            setLoading(false);
                             const onlyNums = e.target.value.replace(
                               /[^0-9]/g,
-                              ""
+                              "",
                             );
                             if (onlyNums.length <= 10) {
                               setPhoneNumber(onlyNums);
@@ -283,11 +312,25 @@ export default function Profile() {
               <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Adresă</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {currentUser?.address ? (
+                  {currentUser?.addressData?.address ? (
                     <div className="flex justify-center sm:justify-between items-center w-full">
-                      <h2>{currentUser?.address}</h2>
+                      <h2>
+                        {`${currentUser.addressData?.address}, ${currentUser.addressData?.city}, jud. ${currentUser.addressData?.county}${currentUser.addressData?.postalCode ? `, ${currentUser.addressData.postalCode}` : ""}`}
+                      </h2>
                       <button
-                        onClick={() => setAddressInput(true)}
+                        onClick={() => {
+                          if (currentUser?.addressData) {
+                            setSelectedCounty(
+                              currentUser.addressData.county || null,
+                            );
+                            setCity(currentUser.addressData.city || "");
+                            setAddress(currentUser.addressData.address || "");
+                            setPostalCode(
+                              currentUser.addressData.postalCode || "",
+                            );
+                          }
+                          setAddressInput(true);
+                        }}
                         className="text-teal-800 ml-6"
                       >
                         <Pencil />
@@ -342,28 +385,51 @@ export default function Profile() {
               <LocationSelector
                 label="Județ"
                 options={countyOptions}
+                value={selectedCounty}
                 onChange={setSelectedCounty}
                 error={countyError}
               />
-              <LocationSelector
-                label="Oraș"
-                options={cityOptions}
-                onChange={setSelectedCity}
-                disabled={!selectedCounty}
-                error={cityError}
-              />
+              <div className="w-full sm:w-1/2 sm:pr-2 relative">
+                <label htmlFor="city" className="mt-2 px-2">
+                  Localitate
+                </label>
+                <Input
+                  label="Localitate"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={!selectedCounty}
+                />
+              </div>
             </div>
             <label htmlFor="address" className="mt-2 px-2">
               Adresă
             </label>
-            <textarea
+            <Input
               id="address"
+              label="Strada, numărul, etc."
+              value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="border rounded h-24 px-1 py-1 mt-2 flex-grow"
-              style={{ resize: "none" }}
             />
             {addressError && (
               <p className="text-red-600 text-sm mt-1">{addressError}</p>
+            )}
+            <label htmlFor="address" className="mt-2 px-2">
+              Cod Poștal
+            </label>
+            <Input
+              id="postalcode"
+              label="Cod poștal"
+              value={postalCode}
+              onChange={(e) => {
+                const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+                if (onlyNums.length <= 6) {
+                  setPostalCode(onlyNums);
+                }
+              }}
+              maxLength="6"
+            />
+            {postalCodeError && (
+              <p className="text-red-600 text-sm mt-1">{postalCodeError}</p>
             )}
             <DialogFooter className="mt-2 flex justify-center">
               <Button
@@ -410,8 +476,25 @@ export default function Profile() {
             type="file"
             accept="image/*"
             onChange={(e) => {
-              const file = e.target.files[0];
+              const file = e.target.files?.[0];
               if (file) {
+                // Validate file size (max 5MB)
+                const maxSizeMB = 5;
+                const maxSizeBytes = maxSizeMB * 1024 * 1024;
+                if (file.size > maxSizeBytes) {
+                  setImageError(
+                    `Imaginea este prea mare. Maxim ${maxSizeMB}MB permis.`,
+                  );
+                  return;
+                }
+                // Validate file type
+                if (!file.type.startsWith("image/")) {
+                  setImageError(
+                    "Vă rugăm să selectați un fișier imagine valid.",
+                  );
+                  return;
+                }
+                setImageError("");
                 setSelectedImage(file);
                 setPreviewURL(URL.createObjectURL(file));
               }
@@ -430,22 +513,29 @@ export default function Profile() {
               try {
                 const url = await uploadProfilePicture(
                   currentUser.uid,
-                  selectedImage
+                  selectedImage,
                 );
                 const updatedUser = { ...currentUser, img: url };
                 await setField("users", currentUser.uid, "img", url);
                 setCurrentUser(updatedUser);
-                localStorage.setItem(
-                  "currentUser",
-                  JSON.stringify(updatedUser)
-                );
+                try {
+                  localStorage.setItem(
+                    "currentUser",
+                    JSON.stringify(updatedUser),
+                  );
+                } catch (storageError) {
+                  console.error(
+                    "Failed to save to localStorage:",
+                    storageError,
+                  );
+                }
                 setPreviewURL(null);
                 setSelectedImage(null);
                 setShowImageModal(false);
               } catch (err) {
                 setImageError(
                   "Eroare la încărcarea imaginii de profil: " +
-                    (err?.message || err)
+                    (err?.message || err),
                 );
               }
               setLoading(false);

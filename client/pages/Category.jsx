@@ -2,7 +2,15 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../src/components/Header";
 import Footer from "../src/components/Footer";
-import { X, User, Search, ListFilter } from "lucide-react";
+import {
+  X,
+  User,
+  Search,
+  ListFilter,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useProduct } from "../src/contexts/ProductContext";
@@ -41,7 +49,7 @@ const FilterDrawer = React.memo(function FilterDrawer({
   // Local state for filters inside the drawer
   const [localMasses, setLocalMasses] = useState(initialMasses);
   const [localShowInStockOnly, setLocalShowInStockOnly] = useState(
-    initialShowInStockOnly
+    initialShowInStockOnly,
   );
   const [localPriceRange, setLocalPriceRange] = useState(initialPriceRange);
 
@@ -56,7 +64,7 @@ const FilterDrawer = React.memo(function FilterDrawer({
 
   const toggleMass = (mass) => {
     setLocalMasses((prev) =>
-      prev.includes(mass) ? prev.filter((m) => m !== mass) : [...prev, mass]
+      prev.includes(mass) ? prev.filter((m) => m !== mass) : [...prev, mass],
     );
   };
 
@@ -164,6 +172,10 @@ export default function Category() {
   const [showInStockOnly, setShowInStockOnly] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 0]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortType, setSortType] = useState("default");
+
+  const ITEMS_PER_PAGE = 20;
 
   // Debounced search term for better UX
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
@@ -171,7 +183,7 @@ export default function Category() {
   // Filter products based on the category
   const filtered = useMemo(
     () => products.filter((p) => p.type === Number(id)),
-    [products, id]
+    [products, id],
   );
 
   // Check if there are products available
@@ -187,7 +199,7 @@ export default function Category() {
   const uniqueMasses = useMemo(
     () =>
       Array.from(new Set(filtered.map((p) => p.mass))).sort((a, b) => a - b),
-    [filtered]
+    [filtered],
   );
 
   //set the initial price range
@@ -202,7 +214,7 @@ export default function Category() {
       setShowInStockOnly(showInStockOnly);
       setPriceRange(priceRange);
     },
-    []
+    [],
   );
 
   // Function to reset all filters
@@ -222,12 +234,23 @@ export default function Category() {
     if (showInStockOnly) result = result.filter((p) => p.quantity > 0);
     // Filter by price range
     result = result.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
+      (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
     );
     // Filter by debounced search term
     const term = debouncedSearchTerm.trim().toLowerCase();
     if (term) {
       result = result.filter((p) => p.name.toLowerCase().includes(term));
+    }
+
+    // Apply sorting
+    if (sortType === "name-asc") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortType === "name-desc") {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortType === "price-asc") {
+      result.sort((a, b) => a.price - b.price);
+    } else if (sortType === "price-desc") {
+      result.sort((a, b) => b.price - a.price);
     }
 
     return result;
@@ -237,7 +260,24 @@ export default function Category() {
     showInStockOnly,
     priceRange,
     debouncedSearchTerm,
+    sortType,
   ]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMasses, showInStockOnly, priceRange, debouncedSearchTerm]);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -246,7 +286,7 @@ export default function Category() {
           <Link to="/about" className="text-white hover:underline">
             Despre noi
           </Link>
-          <div className="ml-auto flex gap-4  justify-center items-center">
+          <div className="ml-auto flex gap-4 justify-center items-center">
             <div className="relative justify-center items-center">
               <input
                 type="text"
@@ -258,6 +298,7 @@ export default function Category() {
               />
               <Search className="text-teal-800 h-5 absolute right-0 top-0 mt-2.5 mr-4 pointer-events-none" />
             </div>
+
             {!currentUser && (
               <Link to="/sign-up">
                 <li className="hover:underline text-white flex items-center gap-1">
@@ -284,9 +325,85 @@ export default function Category() {
               <ListFilter />
             </IconButton>
           </Tooltip>
+          <select
+            value={sortType}
+            onChange={(e) => setSortType(e.target.value)}
+            className="bg-white bg-opacity-80 rounded-lg w-48 text-sm px-4 py-2"
+          >
+            <option value="default">Sortează produsele</option>
+            <option value="name-asc">A - Z</option>
+            <option value="name-desc">Z - A</option>
+            <option value="price-asc">Preț: crescător</option>
+            <option value="price-desc">Preț: descrescător</option>
+          </select>
         </div>
       )}
-      <CategoryGrid products={filteredProducts} />
+
+      <CategoryGrid products={paginatedProducts} />
+
+      {totalPages > 1 && (
+        <div className="flex justify-center py-8 px-4">
+          <nav className="bg-white/10 backdrop-blur-2xl backdrop-saturate-200 rounded-full px-4 py-2 shadow-lg border border-white/20">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                size="sm"
+                variant="text"
+                className={`rounded-full transition-all ${
+                  currentPage === 1
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:bg-white"
+                }`}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .slice(
+                    Math.max(0, currentPage - 2),
+                    Math.min(totalPages, currentPage + 3),
+                  )
+                  .map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`rounded-full px-4 py-2 font-medium transition-all duration-300 ${
+                        currentPage === page
+                          ? "bg-white text-gray-800 shadow"
+                          : "text-gray-600 hover:bg-white hover:text-gray-800"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+              </div>
+
+              <IconButton
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+                size="sm"
+                variant="text"
+                className={`rounded-full transition-all ${
+                  currentPage === totalPages
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 hover:bg-white"
+                }`}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </IconButton>
+            </div>
+          </nav>
+        </div>
+      )}
+
+      <div className="text-center text-gray-400 text-sm py-4">
+        Pagina {totalPages > 0 ? currentPage : 0} din {totalPages} | Total:{" "}
+        {filteredProducts.length} produse
+      </div>
       <FilterDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

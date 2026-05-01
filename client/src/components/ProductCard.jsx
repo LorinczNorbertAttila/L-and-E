@@ -48,7 +48,7 @@ export default function ProductCard({ product }) {
     <>
       {/* Product Card */}
       <Card
-        className="bg-white bg-opacity-50 cursor-pointer lg:w-64 w-48 h-full flex flex-col group"
+        className="bg-white/40 backdrop-blur-2xl backdrop-saturate-200 px-4 py-2 border border-white/20 cursor-pointer lg:w-64 w-44 h-full flex flex-col group"
         onClick={handleOpen}
         role="button"
         tabIndex={0}

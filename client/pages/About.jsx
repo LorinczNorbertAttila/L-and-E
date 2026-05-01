@@ -6,7 +6,7 @@ import Footer from "../src/components/Footer";
 export default function About() {
   return (
     <>
-      <div className="min-h-screen flex flex-col items-center justify-start p-20 gap-10">
+      <div className="min-h-screen flex flex-col items-center justify-start p-4 md:p-20 gap-10">
         <Link to="/">
         <img src={logoWhite} className="w-52 h-52 mb-12" alt="lande" />
       </Link>

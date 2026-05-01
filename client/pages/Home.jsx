@@ -93,6 +93,7 @@ export default function Home() {
               ref={searchRef}
             >
               <input
+                id="search-input"
                 type="text"
                 aria-label="Căutare produse"
                 className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-none transition-all duration-300 ease-in-out w-12 focus:w-64"
@@ -152,9 +153,9 @@ export default function Home() {
 
             {/* Registration link if user is not logged in */}
             {!currentUser && (
-              <Link to="/sign-up">
+              <Link to="/sign-in">
                 <li className="hover:underline text-white flex items-center gap-1">
-                  <User /> Registrare
+                  <User /> Autentificare
                 </li>
               </Link>
             )}
@@ -203,13 +204,6 @@ export default function Home() {
           />
         );
       })}
-      {/* Chatbots */}
-      {/* <BotpressChat/> */}
-      {/* <TidioChat /> */}
-      {/* <FreshChat /> */}
-      {/* <TawkToChat /> */}
-      {/* <CrispChat /> */}
-      {/* <ZapierChat /> */}
       <Footer />
       {/* Product modal for selected product from search */}
       <ProductModal

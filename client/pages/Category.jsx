@@ -289,6 +289,7 @@ export default function Category() {
           <div className="ml-auto flex gap-4 justify-center items-center">
             <div className="relative justify-center items-center">
               <input
+                id="search-input"
                 type="text"
                 aria-label="Căutare produse"
                 className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-none transition-all duration-300 ease-in-out w-12 focus:w-64"
@@ -326,6 +327,7 @@ export default function Category() {
             </IconButton>
           </Tooltip>
           <select
+            id="sort-select"
             value={sortType}
             onChange={(e) => setSortType(e.target.value)}
             className="bg-white bg-opacity-80 rounded-lg w-48 text-sm px-4 py-2"

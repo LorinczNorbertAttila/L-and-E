@@ -207,7 +207,7 @@ export default function Header() {
   }
 
   return (
-    <Navbar className="mx-auto max-w-screen-2xl p-2 shadow-md rounded-3xl justify-center items-center">
+    <Navbar className="mx-auto max-w-screen-2xl bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 p-2 shadow-md rounded-3xl justify-center items-center">
       <div className="flex justify-between items-center">
         <div className="flex items-center md:gap-10 gap-2">
           <Link className="pl-3" to="/">

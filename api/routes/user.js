@@ -1,5 +1,5 @@
 import express from "express";
-import { db } from "../../client/src/firebase/firebase_admin.js";
+import { db } from "../firebase/firebase_admin.js";
 import admin from "firebase-admin";
 
 const router = express.Router();
@@ -24,34 +24,63 @@ async function fetchProductsByIds(ids) {
       .where(admin.firestore.FieldPath.documentId(), "in", chunk)
       .get();
     products = products.concat(
-      snaps.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      snaps.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
     );
   }
   return products;
+}
+
+// Auth middleware to verify user owns the UID
+async function verifyUserAuth(req, res, next) {
+  try {
+    const token = req.headers.authorization?.split("Bearer ")[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Missing token" });
+    }
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.uid = decodedToken.uid;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+}
+
+// Middleware to verify user is accessing their own data
+function requireOwnUser(req, res, next) {
+  const targetUid = req.params.uid || req.query.uid || req.body.uid;
+  if (targetUid && req.uid !== targetUid) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
+  next();
 }
 
 /**
  * GET /api/user/profile/:uid
  * Fetch user profile by UID
  */
-router.get("/profile/:uid", async (req, res) => {
-  const { uid } = req.params;
-  if (!uid)
-    return res.status(400).json({ success: false, message: "Missing UID" });
+router.get(
+  "/profile/:uid",
+  verifyUserAuth,
+  requireOwnUser,
+  async (req, res) => {
+    const { uid } = req.params;
+    if (!uid)
+      return res.status(400).json({ success: false, message: "Missing UID" });
 
-  try {
-    const userSnap = await db.collection("users").doc(uid).get();
-    if (!userSnap.exists)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+    try {
+      const userSnap = await db.collection("users").doc(uid).get();
+      if (!userSnap.exists)
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
 
-    return res.status(200).json({ success: true, data: userSnap.data() });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+      return res.status(200).json({ success: true, data: userSnap.data() });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+);
 
 /**
  * GET /api/user/exists/:uid
@@ -76,8 +105,13 @@ router.get("/exists/:uid", async (req, res) => {
  * Body: { uid, email, name, lname, photoURL }
  * Create a new user document in Firestore
  */
-router.post("/create", async (req, res) => {
+router.post("/create", verifyUserAuth, async (req, res) => {
   const { uid, email, name, lname, photoURL } = req.body;
+
+  // User can only create their own account
+  if (uid !== req.uid) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
 
   if (!uid || !email || !name) {
     return res.status(400).json({ success: false, message: "Missing fields" });
@@ -100,7 +134,9 @@ router.post("/create", async (req, res) => {
       img: photoURL,
       tel: "",
       addressData: {},
+      billingCompanyData: {},
       cart: [],
+      favorites: [],
     });
 
     return res.status(201).json({ success: true, message: "User created" });
@@ -115,7 +151,7 @@ router.post("/create", async (req, res) => {
  * Body: { uid, localCart }
  * Merge local cart with Firestore cart
  */
-router.post("/merge-cart", async (req, res) => {
+router.post("/merge-cart", verifyUserAuth, requireOwnUser, async (req, res) => {
   const { uid, localCart } = req.body;
 
   if (!uid || !Array.isArray(localCart)) {
@@ -124,6 +160,17 @@ router.post("/merge-cart", async (req, res) => {
 
   try {
     const userRef = db.collection("users").doc(uid);
+
+    // Batch fetch all products outside transaction to avoid timeout
+    const allProductIds = localCart
+      .map((item) => item.productId || item.product?.id)
+      .filter(Boolean);
+    const productsMap = new Map();
+
+    if (allProductIds.length > 0) {
+      const products = await fetchProductsByIds(allProductIds);
+      products.forEach((p) => productsMap.set(p.id, p));
+    }
 
     await db.runTransaction(async (t) => {
       const userSnap = await t.get(userRef);
@@ -139,17 +186,15 @@ router.post("/merge-cart", async (req, res) => {
         });
       }
 
-      // Merge localCart
+      // Merge localCart using pre-fetched products
       for (const item of localCart) {
         const id = item.productId || item.product?.id;
         if (!id || typeof item.quantity !== "number" || item.quantity <= 0)
           continue;
 
-        const productRef = db.collection("products").doc(id);
-        const productSnap = await t.get(productRef);
-        if (!productSnap.exists) continue;
+        const product = productsMap.get(id);
+        if (!product) continue;
 
-        const product = productSnap.data();
         const availableStock = product.quantity;
 
         const prevQuantity = cartMap.get(id)?.quantity || 0;
@@ -176,70 +221,135 @@ router.post("/merge-cart", async (req, res) => {
 });
 
 /**
- * PATCH /api/user/set-field
- * Body: { collection, id, field, value }
- *  Update a specific field in a user or product document
+ * PATCH /api/user/update-fields
+ * Body: { collection, id, fields }
+ *  Update specific field in a user or product document
  */
-router.patch("/set-field", async (req, res) => {
-  const { collection, id, field, value } = req.body;
+router.patch(
+  "/update-fields",
+  verifyUserAuth,
+  requireOwnUser,
+  async (req, res) => {
+    const { collection, id, fields } = req.body;
 
-  const allowedCollections = ["users", "products"];
-  const allowedFields = ["tel", "addressData", "cart", "img"];
+    const allowedCollections = ["users", "products"];
+    const allowedFields = [
+      "tel",
+      "addressData",
+      "billingCompanyData",
+      "cart",
+      "img",
+      "name",
+    ];
 
-  if (
-    !allowedCollections.includes(collection) ||
-    !allowedFields.includes(field)
-  ) {
-    return res
-      .status(403)
-      .json({ success: false, message: "Unauthorized field or collection" });
-  }
+    if (!allowedCollections.includes(collection)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized collection" });
+    }
 
-  // Validate value based on field type
-  if (
-    field === "addressData" &&
-    typeof value === "object"
-  ) {
-    const { county, city, address, postalCode } = value;
-    if (!county || !city || !address || !postalCode) {
+    if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
       return res.status(400).json({
         success: false,
-        message: "All address fields are required",
+        message: "Invalid fields object",
       });
     }
-    if (!/^[0-9]{6}$/.test(postalCode)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid postal code format",
-      });
-    }
-    // Add this
-    if (address.trim().length < 5) {
-      return res.status(400).json({
-        success: false,
-        message: "Address must be at least 5 characters",
-      });
-    }
-  }
 
-  try {
-    const docRef = db.collection(collection).doc(id);
-    await docRef.update({ [field]: value });
+    //Validate fields
+    for (const [field, value] of Object.entries(fields)) {
+      if (!allowedFields.includes(field)) {
+        return res.status(400).json({
+          success: false,
+          message: `Unauthorized field: ${field}`,
+        });
+      }
+      //Name validation: non-empty string, min 2 chars after trim
+      if (field === "name") {
+        if (typeof value !== "string" || value.trim().length < 2) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid name",
+          });
+        }
+      }
+      //Phone number validation: must be 10 digits
+      if (field === "tel") {
+        if (!/^[0-9]{10}$/.test(value)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid phone number",
+          });
+        }
+      }
+      //Address validation:
+      if (field === "addressData") {
+        if (typeof value !== "object" || Array.isArray(value)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid address data",
+          });
+        }
+        const { county, city, address, postalCode } = value;
+        if (!county || !city || !address || !postalCode) {
+          return res.status(400).json({
+            success: false,
+            message: "All address fields are required",
+          });
+        }
+        if (!/^[0-9]{6}$/.test(postalCode)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid postal code",
+          });
+        }
+        if (address.trim().length < 5) {
+          return res.status(400).json({
+            success: false,
+            message: "Address must be at least 5 characters",
+          });
+        }
+      }
+      //Billing company data validation:
+      if (field === "billingCompanyData") {
+        if (typeof value !== "object" || Array.isArray(value)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid billing company data",
+          });
+        }
+        // If provided, validate required fields
+        if (Object.keys(value).length > 0) {
+          const { name, cui, nrRegCom, county, city, address } = value;
+          if (!name || !cui || !nrRegCom || !county || !city || !address) {
+            return res.status(400).json({
+              success: false,
+              message:
+                "All billing company fields are required when billingCompanyData is provided",
+            });
+          }
+        }
+      }
+    }
 
-    return res.status(200).json({ success: true, message: "Field updated" });
-  } catch (error) {
-    console.error("Error updating field:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to update field" });
-  }
-});
+    try {
+      const docRef = db.collection(collection).doc(id);
+      await docRef.update(fields);
+
+      return res.status(200).json({ success: true, message: "Fields updated" });
+    } catch (error) {
+      console.error("Error updating fields:", error);
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to update fields" });
+    }
+  },
+);
 
 /**
  * GET /api/user/favorites?uid=...
  * Returns the user's favorite products (with full product data)
  */
-router.get("/favorites", async (req, res) => {
+router.get("/favorites", verifyUserAuth, requireOwnUser, async (req, res) => {
   const { uid } = req.query;
 
   if (!isValidId(uid)) {
@@ -262,6 +372,7 @@ router.get("/favorites", async (req, res) => {
       return res.status(200).json({ success: true, favorites: [] });
     }
 
+    // Fetch products outside of any transaction
     const detailedFavorites = await fetchProductsByIds(favorites);
 
     res.status(200).json({ success: true, favorites: detailedFavorites });
@@ -276,98 +387,118 @@ router.get("/favorites", async (req, res) => {
  * Body: { uid, productId }
  * Adds a product to the user's favorites
  */
-router.post("/add-to-favorites", async (req, res) => {
-  const { uid, productId } = req.body;
+router.post(
+  "/add-to-favorites",
+  verifyUserAuth,
+  requireOwnUser,
+  async (req, res) => {
+    const { uid, productId } = req.body;
 
-  if (!isValidId(uid) || !isValidId(productId))
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing or invalid uid/productId" });
+    if (!isValidId(uid) || !isValidId(productId))
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing or invalid uid/productId" });
 
-  try {
-    const userRef = db.collection("users").doc(uid);
+    try {
+      const userRef = db.collection("users").doc(uid);
 
-    let detailedFavorites = [];
-    await db.runTransaction(async (t) => {
-      const userSnap = await t.get(userRef);
-      if (!userSnap.exists) throw new Error("User not found");
+      await db.runTransaction(async (t) => {
+        const userSnap = await t.get(userRef);
+        if (!userSnap.exists) throw new Error("User not found");
 
-      const favorites = userSnap.data().favorites || [];
-      if (favorites.includes(productId)) {
-        throw new Error("Already in favorites");
-      }
+        const favorites = userSnap.data().favorites || [];
+        if (favorites.includes(productId)) {
+          throw new Error("Already in favorites");
+        }
 
-      const updatedFavorites = [...favorites, productId];
-      t.update(userRef, {
-        favorites: admin.firestore.FieldValue.arrayUnion(productId),
+        // Check product exists
+        const productRef = db.collection("products").doc(productId);
+        const productSnap = await t.get(productRef);
+        if (!productSnap.exists) throw new Error("Product not found");
+
+        t.update(userRef, {
+          favorites: admin.firestore.FieldValue.arrayUnion(productId),
+        });
       });
 
-      // Fetch product details inside the transaction for consistency
-      detailedFavorites = await fetchProductsByIds(updatedFavorites);
-    });
+      // Fetch updated favorites outside transaction
+      const userSnap = await db.collection("users").doc(uid).get();
+      const updatedFavorites = userSnap.data().favorites || [];
+      const detailedFavorites = await fetchProductsByIds(updatedFavorites);
 
-    res.status(200).json({ success: true, favorites: detailedFavorites });
-  } catch (err) {
-    const msg =
-      err.message === "User not found" || err.message === "Already in favorites"
-        ? err.message
-        : "Server error";
-    res.status(500).json({ success: false, message: msg });
-  }
-});
+      res.status(200).json({ success: true, favorites: detailedFavorites });
+    } catch (err) {
+      const msg =
+        err.message === "User not found" ||
+        err.message === "Already in favorites" ||
+        err.message === "Product not found"
+          ? err.message
+          : "Server error";
+      res.status(err.message === "Already in favorites" ? 409 : 500).json({
+        success: false,
+        message: msg,
+      });
+    }
+  },
+);
 
 /**
  * POST /api/user/remove-from-favorites
  * Body: { uid, productId }
  * Removes a product from the user's favorites
  */
-router.post("/remove-from-favorites", async (req, res) => {
-  const { uid, productId } = req.body;
+router.post(
+  "/remove-from-favorites",
+  verifyUserAuth,
+  requireOwnUser,
+  async (req, res) => {
+    const { uid, productId } = req.body;
 
-  if (!isValidId(uid) || !isValidId(productId)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing or invalid uid/productId" });
-  }
+    if (!isValidId(uid) || !isValidId(productId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing or invalid uid/productId" });
+    }
 
-  try {
-    const userRef = db.collection("users").doc(uid);
+    try {
+      const userRef = db.collection("users").doc(uid);
 
-    let detailedFavorites = [];
-    await db.runTransaction(async (t) => {
-      const userSnap = await t.get(userRef);
-      if (!userSnap.exists) throw new Error("User not found");
+      await db.runTransaction(async (t) => {
+        const userSnap = await t.get(userRef);
+        if (!userSnap.exists) throw new Error("User not found");
 
-      const favorites = userSnap.data().favorites || [];
-      if (!favorites.includes(productId)) {
-        throw new Error("Product not in favorites");
-      }
+        const favorites = userSnap.data().favorites || [];
+        if (!favorites.includes(productId)) {
+          throw new Error("Product not in favorites");
+        }
 
-      const updatedFavorites = favorites.filter((id) => id !== productId);
-      t.update(userRef, {
-        favorites: admin.firestore.FieldValue.arrayRemove(productId),
+        t.update(userRef, {
+          favorites: admin.firestore.FieldValue.arrayRemove(productId),
+        });
       });
 
-      // Fetch product details inside the transaction for consistency
-      detailedFavorites = await fetchProductsByIds(updatedFavorites);
-    });
+      // Fetch updated favorites outside transaction
+      const userSnap = await db.collection("users").doc(uid).get();
+      const updatedFavorites = userSnap.data().favorites || [];
+      const detailedFavorites = await fetchProductsByIds(updatedFavorites);
 
-    res.status(200).json({ success: true, favorites: detailedFavorites });
-  } catch (err) {
-    const msg =
-      err.message === "User not found" ||
-      err.message === "Product not in favorites"
-        ? err.message
-        : "Server error";
-    res.status(500).json({ success: false, message: msg });
-  }
-});
+      res.status(200).json({ success: true, favorites: detailedFavorites });
+    } catch (err) {
+      const msg =
+        err.message === "User not found" ||
+        err.message === "Product not in favorites"
+          ? err.message
+          : "Server error";
+      res.status(500).json({ success: false, message: msg });
+    }
+  },
+);
 
 /**
  * GET /api/user/orders?uid=...
  * Returns the user's orders
  */
-router.get("/orders", async (req, res) => {
+router.get("/orders", verifyUserAuth, requireOwnUser, async (req, res) => {
   const { uid } = req.query;
 
   if (!isValidId(uid)) {
@@ -405,11 +536,51 @@ router.get("/orders", async (req, res) => {
           createdAt: createdAtIso,
           items: detailedItems,
         };
-      })
+      }),
     );
     res.status(200).json({ success: true, orders });
   } catch (err) {
     console.error("Error fetching orders:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * GET /api/user/facebook/profile?accessToken=...
+ * Returns the user's Facebook profile information
+ */
+router.get("/facebook/profile", async (req, res) => {
+  const { accessToken } = req.body;
+
+  if (!accessToken) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing access token" });
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,picture.type(large)&access_token=${accessToken}`,
+    );
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        message: "Failed to fetch Facebook profile",
+      });
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      return res
+        .status(400)
+        .json({ success: false, message: data.error.message });
+    }
+
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    console.error("Error fetching Facebook profile:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

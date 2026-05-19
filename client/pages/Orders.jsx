@@ -29,12 +29,12 @@ function OrderCard({ order, expanded, toggleExpand }) {
         role="button"
         tabIndex={0}
         className="flex justify-between items-center px-4 py-3 cursor-pointer"
-        onClick={() => toggleExpand(order.id)}
-        onKeyDown={(e) => e.key === "Enter" && toggleExpand(order.id)}
+        onClick={() => toggleExpand(order.orderId)}
+        onKeyDown={(e) => e.key === "Enter" && toggleExpand(order.orderId)}
       >
         <div>
           <h3 className="flex flex-col md:flex-row md:gap-1 font-semibold">
-            <span>Comanda:</span>
+            <span>Comanda: #{order.orderId}</span>
             <span>{formattedDate}</span>
           </h3>
           <span className="text-sm">
@@ -44,17 +44,17 @@ function OrderCard({ order, expanded, toggleExpand }) {
         <div className="flex items-center gap-4">
           <span className="text-teal-800 font-bold">{order.total} RON</span>
           <IconButton
-            aria-expanded={expanded === order.id}
+            aria-expanded={expanded === order.orderId}
             size="sm"
             variant="text"
             color="teal"
             ripple={false}
             onClick={(e) => {
               e.stopPropagation();
-              toggleExpand(order.id);
+              toggleExpand(order.orderId);
             }}
           >
-            {expanded === order.id ? (
+            {expanded === order.orderId ? (
               <ChevronUp className="h-5 w-5" />
             ) : (
               <ChevronDown className="h-5 w-5" />
@@ -63,8 +63,17 @@ function OrderCard({ order, expanded, toggleExpand }) {
         </div>
       </div>
       {/* Collapsible section for order items */}
-      <Collapse open={expanded === order.id}>
+      <Collapse open={expanded === order.orderId}>
         <div className="px-4 pb-4 space-y-4">
+          <div className="flex justify-between items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Metoda de plată:{" "}
+              {order.payingOption === "card" ? "Card bancar" : "Ramburs"}
+            </div>
+            <span className="text-sm font-semibold">
+              Livrare: {order.shipping} RON
+            </span>
+          </div>
           {Array.isArray(order.items) &&
             order.items.map((item, idx) => (
               <div
@@ -93,6 +102,28 @@ function OrderCard({ order, expanded, toggleExpand }) {
                 <span className="font-semibold">{item.unitPrice} RON</span>
               </div>
             ))}
+
+          <div className="border-t border-gray-400 pt-2 flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Adresă de livrare: </span>
+              <span className="text-sm">
+                {order.userName} - {order.phoneNumber} -{" "}
+                {order.addressData?.address}, {order.addressData?.city},{" "}
+                {order.addressData?.county}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">
+                Adresă de facturare:{" "}
+              </span>
+              <span className="text-sm">
+                {order.billing
+                  ? `Persoana juridică - ${order.billingCompanyData.name} - ${order.billingCompanyData.address}, ${order.billingCompanyData.city}, ${order.billingCompanyData.county}`
+                  : `Persoană fizică - ${order.userName}`}
+              </span>
+              <span className="text-sm"></span>
+            </div>
+          </div>
         </div>
       </Collapse>
     </div>
@@ -111,17 +142,17 @@ export default function Orders() {
     if (filter === FILTERS.THREE_MONTHS) {
       const threeMonthsAgo = subMonths(new Date(), 3);
       filtered = filtered.filter((order) =>
-        isAfter(new Date(order.createdAt), threeMonthsAgo)
+        isAfter(new Date(order.createdAt), threeMonthsAgo),
       );
     } else if (filter === FILTERS.SIX_MONTHS) {
       const sixMonthsAgo = subMonths(new Date(), 6);
       filtered = filtered.filter((order) =>
-        isAfter(new Date(order.createdAt), sixMonthsAgo)
+        isAfter(new Date(order.createdAt), sixMonthsAgo),
       );
     }
     // Sort orders by date descending
     return filtered.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     );
   };
   const sortedFilteredOrders = useMemo(getFilteredOrders, [orders, filter]);
@@ -162,7 +193,7 @@ export default function Orders() {
           <div className="space-y-6">
             {sortedFilteredOrders.map((order) => (
               <OrderCard
-                key={order.id}
+                key={order.orderId}
                 order={order}
                 expanded={expanded}
                 toggleExpand={toggleExpand}

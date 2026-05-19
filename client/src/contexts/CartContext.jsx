@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { auth, onAuthStateChanged } from "..//firebase/firebase";
+import { auth, onAuthStateChanged } from "../firebase/firebase.js";
 import { X } from "lucide-react";
 import { Dialog, DialogBody, IconButton } from "@material-tailwind/react";
 
@@ -196,14 +196,14 @@ export default function CartProvider({ children }) {
   }
 
   // Save order
-  async function placeOrder(userId = null, total) {
+  async function placeOrder(userId = null, total, shipping, billing, payingOption) {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/cart/place-order`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uid: userId, total }),
+          body: JSON.stringify({ uid: userId, total, shipping, billing, payingOption }),
         }
       );
 

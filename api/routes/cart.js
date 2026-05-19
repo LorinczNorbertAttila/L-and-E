@@ -1,5 +1,5 @@
 import express from "express";
-import { db, admin } from "../../client/src/firebase/firebase_admin.js";
+import { db, admin } from "../firebase/firebase_admin.js";
 const router = express.Router();
 
 // Helper function to validate IDs
@@ -29,7 +29,7 @@ async function getDetailedCart(uid) {
       .where(admin.firestore.FieldPath.documentId(), "in", chunk)
       .get();
     products = products.concat(
-      snaps.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      snaps.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
     );
   }
 
@@ -78,7 +78,7 @@ router.get("/details/:uid", async (req, res) => {
 });
 
 /**
- * POST /api/cart/place-order
+ * POST /api/cart/add
  * Body: { uid, productId }
  * Adds a product to the user's cart
  */
@@ -102,9 +102,9 @@ router.post("/add", async (req, res) => {
       const cart = userSnap.exists ? userSnap.data().cart || [] : [];
 
       const cartItem = cart.find((item) => item.productId === productId);
-      const currentQty = cartItem?.quantity || 0;
+      const nextQty = cartItem?.quantity || 0;
 
-      if (currentQty + 1 > product.quantity) {
+      if (nextQty + 1 > product.quantity) {
         throw new Error("Out of stock");
       }
 
@@ -117,7 +117,7 @@ router.post("/add", async (req, res) => {
       t.update(userRef, { cart });
     });
     const updatedCart = await getDetailedCart(uid);
-    if (!updatedCart) {
+    if (updatedCart === []) {
       return res
         .status(404)
         .json({ success: false, message: "Cart not found" });
@@ -176,11 +176,6 @@ router.patch("/update-quantity", async (req, res) => {
       t.update(userRef, { cart });
     });
     const updatedCart = await getDetailedCart(uid);
-    if (!updatedCart) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Cart not found" });
-    }
 
     res.status(200).json({ success: true, cart: updatedCart });
   } catch (err) {
@@ -213,11 +208,6 @@ router.delete("/remove", async (req, res) => {
       t.update(userRef, { cart });
     });
     const updatedCart = await getDetailedCart(uid);
-    if (!updatedCart) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Cart not found" });
-    }
 
     res.status(200).json({ success: true, cart: updatedCart });
   } catch (err) {
@@ -226,44 +216,62 @@ router.delete("/remove", async (req, res) => {
 });
 
 /**
- * POST /api/cart/add
- * Body: { uid, productId }
+ * POST /api/cart/place-order
+ * Body: { uid, total, shipping, billing, payingOption }
  * Places an order
  */
 router.post("/place-order", async (req, res) => {
-  const { uid, total } = req.body;
-  if (!isValidId(uid) || typeof total !== "number")
+  const { uid, total, shipping, billing, payingOption } = req.body;
+
+  if (!isValidId(uid) || typeof total !== "number") {
     return res
       .status(400)
       .json({ success: false, message: "Invalid order data" });
+  }
 
   try {
     const userRef = db.collection("users").doc(uid);
     const userSnap = await userRef.get();
-    if (!userSnap.exists)
+
+    if (!userSnap.exists) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
+    }
 
-    const cart = userSnap.data().cart || [];
-    if (cart.length === 0)
+    const userData = userSnap.data();
+
+    const cart = userData.cart || [];
+
+    if (cart.length === 0) {
       return res.status(400).json({ success: false, message: "Cart is empty" });
+    }
 
     const productRefs = cart.map((item) =>
-      db.collection("products").doc(item.productId)
+      db.collection("products").doc(item.productId),
     );
+
+    let createdOrderId = null;
 
     await db.runTransaction(async (t) => {
       const productSnaps = await Promise.all(
-        productRefs.map((ref) => t.get(ref))
+        productRefs.map((ref) => t.get(ref)),
       );
 
+      // Auto increment order ID
+      const counterRef = db.collection("counters").doc("orders");
+      const counterSnap = await t.get(counterRef);
+
       const items = [];
+
       for (let i = 0; i < cart.length; i++) {
         const cartItem = cart[i];
         const productSnap = productSnaps[i];
 
-        if (!productSnap.exists) throw new Error("Product not found");
+        if (!productSnap.exists) {
+          throw new Error("Product not found");
+        }
+
         const product = productSnap.data();
 
         if (product.quantity < cartItem.quantity) {
@@ -275,35 +283,78 @@ router.post("/place-order", async (req, res) => {
           quantity: cartItem.quantity,
           unitPrice: product.price,
         });
-
+        //update product stock
         t.update(productRefs[i], {
           quantity: product.quantity - cartItem.quantity,
         });
       }
 
+      let nextOrderId = 0;
+
+      if (!counterSnap.exists) {
+        t.set(counterRef, {
+          next: 1,
+        });
+
+        nextOrderId = 0;
+      } else {
+        const next = counterSnap.data().next || 0;
+
+        nextOrderId = next;
+
+        t.update(counterRef, {
+          next: next + 1,
+        });
+      }
+
+      createdOrderId = nextOrderId;
+
       const orderData = {
+        orderId: nextOrderId,
         userId: uid,
         items,
         total,
+        shipping,
+        billing,
+        payingOption,
         status: "Procesare",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        //user info
+        userName: userData.name || "",
+        phoneNumber: userData.tel || "",
+        // Save address data
+        addressData: userData.addressData || {},
+        // Save billing company data only if billing === true
+        ...(billing && {
+          billingCompanyData: userData.billingCompanyData || {},
+        }),
       };
 
-      const orderRef = db.collection("orders").doc();
-      t.set(orderRef, orderData);
-      t.update(userRef, { cart: [] });
-    });
-    const updatedCart = await getDetailedCart(uid);
-    if (!updatedCart) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Cart not found" });
-    }
+      // Use incremental number as document ID
+      const orderRef = db.collection("orders").doc(String(nextOrderId));
 
-    res.status(201).json({ success: true, cart: updatedCart });
+      t.set(orderRef, orderData);
+
+      // Clear cart after successful order
+      t.update(userRef, {
+        cart: [],
+      });
+    });
+
+    const updatedCart = await getDetailedCart(uid);
+
+    res.status(201).json({
+      success: true,
+      orderId: createdOrderId,
+      cart: updatedCart,
+    });
   } catch (err) {
     console.error("Order error:", err);
-    res.status(500).json({ success: false, message: "Order error" });
+
+    res.status(500).json({
+      success: false,
+      message: err.message || "Order error",
+    });
   }
 });
 

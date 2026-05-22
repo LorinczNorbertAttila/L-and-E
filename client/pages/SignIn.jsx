@@ -7,7 +7,7 @@ import logoWhite from "../src/assets/images/lande_white.png";
 export default function SignIn() {
   const emailRef = useRef();
   const passRef = useRef();
-  const { google_login, login } = useAuth();
+  const { google_login, login, facebook_login } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -68,15 +68,16 @@ export default function SignIn() {
     await handleAuth(google_login, "/");
   }
 
+  async function handleFacebookAuth(e) {
+    e.preventDefault();
+    await handleAuth(facebook_login, "/");
+  }
+
   return (
     <div className="py-1 flex flex-col justify-center items-center sm:py-12">
       {/* Link to the home page */}
       <Link to="/">
-        <img
-          src={logoWhite}
-          className="w-28 h-28 mb-12"
-          alt="lande"
-        />
+        <img src={logoWhite} className="w-28 h-28 mb-12" alt="lande" />
       </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
@@ -167,7 +168,7 @@ export default function SignIn() {
                 Crează
               </Link>
             </h1>
-            <div className="w-full flex justify-center">
+            <div className="w-full flex flex-col justify-center gap-2">
               {/* Google sign-in button */}
               <Button
                 size="md"
@@ -175,6 +176,7 @@ export default function SignIn() {
                 color="blue-gray"
                 className="flex items-center gap-3"
                 onClick={handleGoogleAuth}
+                disabled={loading}
               >
                 <img
                   src="https://docs.material-tailwind.com/icons/google.svg"
@@ -182,6 +184,21 @@ export default function SignIn() {
                   className="h-6 w-6"
                 />
                 Continuă cu Google
+              </Button>
+              <Button
+                size="md"
+                variant="outlined"
+                color="blue-gray"
+                className="flex items-center gap-3"
+                onClick={handleFacebookAuth}
+                disabled={loading}
+              >
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png"
+                  alt="facebook"
+                  className="h-6 w-6"
+                />
+                Continuă cu Facebook
               </Button>
             </div>
           </div>

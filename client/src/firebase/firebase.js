@@ -2,12 +2,15 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
 } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
@@ -25,13 +28,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig); //initialize Firebase
 
 export const auth = getAuth(app); //object for use in authentication operations
-export const provider = new GoogleAuthProvider(); //Google Auth Provider instance for use in Google sign-in operations
+export const googleProvider = new GoogleAuthProvider(); //Google Auth Provider instance for use in Google sign-in operations
+export const facebookProvider = new FacebookAuthProvider(); //Facebook Auth Provider instance for use in Facebook sign-in operations
 export const storage = getStorage(app); //storage for images
 export {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  FacebookAuthProvider,
 };

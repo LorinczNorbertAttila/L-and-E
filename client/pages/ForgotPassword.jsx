@@ -3,6 +3,7 @@ import { useAuth } from "../src/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Alert } from "@material-tailwind/react";
 import logoWhite from "../src/assets/images/lande_white.png";
+import CustomAlert from "../src/components/CustomAlert";
 
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,9 +12,10 @@ const validateEmail = (email) => {
 
 export default function ForgotPassword() {
   const emailRef = useRef();
-  const { resetPassword } = useAuth();
+  const { sendResetPasswordEmail } = useAuth();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -27,24 +29,25 @@ export default function ForgotPassword() {
     try {
       setError(""); // Clear previous errors
       setLoading(true);
-      await resetPassword(emailRef.current.value);
-      alert("Email-ul de recuperare a fost trimis!"); // Alert message
-      navigate("/sign-in"); // Navigate to sign-in page when resetting is successful
+      await sendResetPasswordEmail(emailRef.current.value);
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+        setTimeout(() => {
+          navigate("/sign-in");
+          setLoading(false);
+        }, 500); // Navigate after alert hides
+      }, 2000);
     } catch (error) {
       setError("Recuperarea parolei a fost nereușită: " + error.message); // Error message
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
     <div className="py-1 flex flex-col justify-center items-center sm:py-12">
       <Link to="/">
-        <img
-          src={logoWhite}
-          className="w-28 h-28 mb-12"
-          alt="lande"
-        />
+        <img src={logoWhite} className="w-28 h-28 mb-12" alt="lande" />
       </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
@@ -58,7 +61,6 @@ export default function ForgotPassword() {
                 <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
                   <div className="relative">
                     <input
-                      autoComplete="off"
                       id="email"
                       name="email"
                       type="email"
@@ -96,6 +98,11 @@ export default function ForgotPassword() {
           </div>
         </form>
       </div>
+      <CustomAlert
+        error={false}
+        message="Email-ul de recuperare a fost trimis!"
+        open={showAlert}
+      />
     </div>
   );
 }

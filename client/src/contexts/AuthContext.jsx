@@ -1,9 +1,17 @@
 import React, { useContext, useState, useEffect, useMemo } from "react";
-import { auth, provider, createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
+import {
+  auth,
+  googleProvider,
+  facebookProvider,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signOut, } from "../firebase/firebase";
+  signOut,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  FacebookAuthProvider,
+} from "../firebase/firebase.js";
 import { useCart } from "../contexts/CartContext";
 
 // Create a context for authentication
@@ -12,6 +20,24 @@ const AuthContext = React.createContext();
 // Custom hook to use the AuthContext
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+// Helper function to get Firebase ID token
+async function getAuthToken() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No authenticated user");
+  return await user.getIdToken();
+}
+
+// Helper function to make authenticated API calls
+async function fetchWithAuth(url, options = {}) {
+  const token = await getAuthToken();
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+    ...options.headers,
+  };
+  return fetch(url, { ...options, headers });
 }
 
 // Provider component to wrap the application and provide authentication context
@@ -26,9 +52,13 @@ export default function AuthProvider({ children }) {
 
   // Create new user in Firestore
   async function createUser(uid, email, name, lname, photoURL) {
+    const token = await getAuthToken();
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ uid, email, name, lname, photoURL }),
     });
     const result = await res.json();
@@ -36,21 +66,21 @@ export default function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-      const checkAdmin = async () => {
-        if (!firebaseUser) {
-          setIsAdmin(false);
-          return;
-        }
-        try {
-          const token = await firebaseUser.getIdTokenResult();
-          setIsAdmin(token.claims.admin === true);
-        } catch (e) {
-          setIsAdmin(false);
-        }
-      };
-  
-      checkAdmin();
-    }, [firebaseUser]);
+    const checkAdmin = async () => {
+      if (!firebaseUser) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const token = await firebaseUser.getIdTokenResult();
+        setIsAdmin(token.claims.admin === true);
+      } catch (e) {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [firebaseUser]);
 
   // Merge cart items from localStorage with Firestore
   async function mergeCartWithFirestore(uid) {
@@ -58,13 +88,12 @@ export default function AuthProvider({ children }) {
     if (!savedCart) return;
     const localCart = JSON.parse(savedCart);
 
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `${import.meta.env.VITE_API_URL}/api/user/merge-cart`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid, localCart }),
-      }
+      },
     );
     const result = await res.json();
 
@@ -77,26 +106,26 @@ export default function AuthProvider({ children }) {
   // Fetch user's favorite products from Firestore
   async function getFavorites(uid) {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/user/favorites?uid=${uid}`
+      const res = await fetchWithAuth(
+        `${import.meta.env.VITE_API_URL}/api/user/favorites?uid=${uid}`,
       );
       const data = await res.json();
       if (res.ok && data.success) setFavorites(data.favorites);
-    } catch (err) {
-      console.error("Error fetching favorites", err);
+    } catch (error) {
+      console.error("Error fetching favorites", error);
     }
   }
 
   // Fetch user's orders from Firestore
   async function getOrders(uid) {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/user/orders?uid=${uid}`
+      const res = await fetchWithAuth(
+        `${import.meta.env.VITE_API_URL}/api/user/orders?uid=${uid}`,
       );
       const data = await res.json();
       if (res.ok && data.success) setOrders(data.orders);
-    } catch (err) {
-      console.error("Error fetching favorites", err);
+    } catch (error) {
+      console.error("Error fetching orders", error);
     }
   }
 
@@ -106,11 +135,14 @@ export default function AuthProvider({ children }) {
     await mergeCartWithFirestore(uid); // Merge cart items from localStorage with Firestore
     await refreshCart(); // Refresh cart context
     // Fetch user data from Firestore and store it in currentUser
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/user/profile/${uid}`
+    const res = await fetchWithAuth(
+      `${import.meta.env.VITE_API_URL}/api/user/profile/${uid}`,
     );
     const result = await res.json();
     const userData = { ...userCredential.user, ...result.data };
+    if (!res.ok || !result.success) {
+      throw new Error("Failed to fetch profile");
+    }
     setCurrentUser(userData);
     localStorage.setItem("currentUser", JSON.stringify(userData));
     await getFavorites(uid); // Fetch favorites after login
@@ -122,7 +154,7 @@ export default function AuthProvider({ children }) {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
-      password
+      password,
     );
     const uid = userCredential.user.uid;
     await createUser(uid, email, name, lname, "");
@@ -135,7 +167,7 @@ export default function AuthProvider({ children }) {
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
-      password
+      password,
     );
     await postLoginInit(userCredential); // Initialize user data after login
     return userCredential;
@@ -144,14 +176,53 @@ export default function AuthProvider({ children }) {
   // Google login
   async function google_login() {
     // Sign in with Google
-    const userCredential = await signInWithPopup(auth, provider);
+    const userCredential = await signInWithPopup(auth, googleProvider);
     const uid = userCredential.user.uid;
     const email = userCredential.user.email;
     const displayName = userCredential.user.displayName;
     const photoURL = userCredential.user.photoURL;
     // Check if user already exists in Firestore
     const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/user/exists/${uid}`
+      `${import.meta.env.VITE_API_URL}/api/user/exists/${uid}`,
+    );
+    const result = await res.json();
+    // If user doesn't exist, create a new user in Firestore
+    if (!result.exists) {
+      await createUser(uid, email, displayName, "", photoURL);
+    }
+    await postLoginInit(userCredential); // Initialize user data after login
+    return userCredential;
+  }
+
+  //Helper function to fetch Facebook profile picture using Graph API
+  async function fetchFacebookPicture(accessToken) {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/user/facebook/profile?accessToken=${accessToken}`,
+      );
+
+      const data = await res.json();
+      return data?.picture?.data?.url || null;
+    } catch (error) {
+      console.error("Graph API error:", error);
+      return null;
+    }
+  }
+
+  // Facebook login
+  async function facebook_login() {
+    // Sign in with Facebook
+    const userCredential = await signInWithPopup(auth, facebookProvider);
+    const uid = userCredential.user.uid;
+    const email = userCredential.user.email;
+    const displayName = userCredential.user.displayName;
+    const credential =
+      FacebookAuthProvider.credentialFromResult(userCredential);
+    const accessToken = credential.accessToken;
+    const photoURL = await fetchFacebookPicture(accessToken);
+    // Check if user already exists in Firestore
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/user/exists/${uid}`,
     );
     const result = await res.json();
     // If user doesn't exist, create a new user in Firestore
@@ -163,8 +234,14 @@ export default function AuthProvider({ children }) {
   }
 
   //Password reset
-  function resetPassword(email) {
+  async function sendResetPasswordEmail(email) {
     return sendPasswordResetEmail(auth, email);
+  }
+  async function verifyResetCode(oobCode) {
+    return await verifyPasswordResetCode(auth, oobCode);
+  }
+  async function resetPassword(oobCode, newPassword) {
+    return await confirmPasswordReset(auth, oobCode, newPassword);
   }
 
   // Logout
@@ -172,49 +249,52 @@ export default function AuthProvider({ children }) {
     setCurrentUser(null);
     setFirebaseUser(null);
     setFavorites([]);
+    setOrders([]);
     return signOut(auth);
   }
 
   // setField function that finds a document by id and updates a specific field (only if it's allowed) with the given value
-  async function setField(collectionName, id, fieldName, value) {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/user/set-field`,
+  async function setField(collectionName, id, fields) {
+    const res = await fetchWithAuth(
+      `${import.meta.env.VITE_API_URL}/api/user/update-fields`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           collection: collectionName,
           id,
-          field: fieldName,
-          value,
+          fields,
         }),
-      }
+      },
     );
 
-    if (!res.ok) throw new Error("Failed to update field");
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to update fields");
+    }
+
+    return await res.json();
   }
 
   //Add products from user's favorites
   async function addToFavorites(productId) {
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${import.meta.env.VITE_API_URL}/api/user/add-to-favorites`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             uid: currentUser.uid,
             productId,
           }),
-        }
+        },
       );
       const data = await res.json();
       if (res.ok && data.success) setFavorites(data.favorites);
       return data;
-    } catch (err) {
+    } catch (error) {
       return {
         success: false,
-        message: err.message || "Error adding to favorites",
+        message: error.message || "Error adding to favorites",
       };
     }
   }
@@ -222,25 +302,24 @@ export default function AuthProvider({ children }) {
   //Remove products from user's favorites
   async function removeFromFavorites(productId) {
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `${import.meta.env.VITE_API_URL}/api/user/remove-from-favorites`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             uid: currentUser.uid,
             productId,
           }),
-        }
+        },
       );
       const data = await res.json();
       if (res.ok && data.success) setFavorites(data.favorites);
 
       return data;
-    } catch (err) {
+    } catch (error) {
       return {
         success: false,
-        message: err.message || "Error removing from favorites",
+        message: error.message || "Error removing from favorites",
       };
     }
   }
@@ -257,8 +336,8 @@ export default function AuthProvider({ children }) {
             await getFavorites(cachedUser.uid); // Fetch favorites with cached user UID
             await getOrders(cachedUser.uid); // Fetch orders with cached user UID
           } else {
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`
+            const res = await fetchWithAuth(
+              `${import.meta.env.VITE_API_URL}/api/user/profile/${user.uid}`,
             );
             const result = await res.json();
             const userData = { ...user, ...result.data };
@@ -268,7 +347,7 @@ export default function AuthProvider({ children }) {
             await getOrders(userData.uid); // Fetch orders with user UID
           }
         } catch (error) {
-          console.error("Error handling cached user", err);
+          console.error("Error handling cached user", error);
           localStorage.removeItem("currentUser");
         }
       } else {
@@ -289,7 +368,10 @@ export default function AuthProvider({ children }) {
       signup,
       login,
       google_login,
+      facebook_login,
       logout,
+      sendResetPasswordEmail,
+      verifyResetCode,
       resetPassword,
       setField,
       favorites,
@@ -298,7 +380,7 @@ export default function AuthProvider({ children }) {
       removeFromFavorites,
       orders,
     }),
-    [currentUser, firebaseUser, favorites, orders]
+    [currentUser, firebaseUser, favorites, orders],
   );
 
   return (

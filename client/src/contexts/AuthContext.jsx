@@ -379,6 +379,7 @@ export default function AuthProvider({ children }) {
       addToFavorites,
       removeFromFavorites,
       orders,
+      getOrders,
     }),
     [currentUser, firebaseUser, favorites, orders],
   );

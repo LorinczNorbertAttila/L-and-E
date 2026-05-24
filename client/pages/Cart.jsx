@@ -14,7 +14,7 @@ import { set } from "date-fns";
 export default function Cart() {
   const { cart, updateCartItemQuantity, removeFromCart, placeOrder } =
     useCart();
-  const { currentUser, setField, setCurrentUser } = useAuth();
+  const { currentUser, setField, setCurrentUser, getOrders } = useAuth();
   const { categories } = useCategory();
   const [error, setError] = useState(null);
   const [showInfoInput, setShowInfoInput] = useState(false);
@@ -101,6 +101,8 @@ export default function Cart() {
         billingOption,
         payingOption,
       );
+      // Refresh orders list after successful order placement
+      await getOrders(currentUser?.uid);
       setPlaceOrderSuccess(true);
       setShowAlert(true);
       setTimeout(() => {
@@ -187,7 +189,8 @@ export default function Cart() {
                     </label>
                   </div>
                   {billingOption === true &&
-                    (Object.keys(currentUser?.billingCompanyData || {}).length > 0  ? (
+                    (Object.keys(currentUser?.billingCompanyData || {}).length >
+                    0 ? (
                       <div className="flex flex-col justify-between mb-2">
                         <span>{currentUser.billingCompanyData.name}</span>
                         <span>{currentUser.billingCompanyData.address}</span>

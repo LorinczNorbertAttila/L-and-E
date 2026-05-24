@@ -134,7 +134,7 @@ export default function Cart() {
               <div className="flex flex-col md:flex-row justify-between gap-4 mb-6 lg:px-20">
                 <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-lg shadow-md p-6 lg:w-1/4">
                   <h2 className="text-lg font-semibold mb-4">Livrare</h2>
-                  {currentUser?.addressData ? (
+                  {Object.keys(currentUser?.addressData || {}).length > 0 ? (
                     <div className="flex flex-col justify-between mb-2">
                       <span>
                         {currentUser.name} - {currentUser.tel}
@@ -187,7 +187,7 @@ export default function Cart() {
                     </label>
                   </div>
                   {billingOption === true &&
-                    (currentUser?.billingCompanyData ? (
+                    (Object.keys(currentUser?.billingCompanyData || {}).length > 0  ? (
                       <div className="flex flex-col justify-between mb-2">
                         <span>{currentUser.billingCompanyData.name}</span>
                         <span>{currentUser.billingCompanyData.address}</span>

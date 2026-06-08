@@ -132,8 +132,8 @@ export default function Cart() {
         </h2>
         {cart.length > 0 ? (
           <>
-            {currentUser ? (
-              <div className="flex flex-col md:flex-row justify-between gap-4 mb-6 lg:px-20">
+            {currentUser && (
+              <div className="flex flex-col lg:flex-row justify-between gap-4 mb-6 md:px-20">
                 <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6 lg:w-1/4">
                   <h2 className="text-lg font-semibold mb-4">Livrare</h2>
                   {Object.keys(currentUser?.addressData || {}).length > 0 ? (
@@ -246,11 +246,9 @@ export default function Cart() {
                   </div>
                 </div>
               </div>
-            ) : (
-              <></>
             )}
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="space-y-4 md:w-3/4">
+            <div className="flex flex-col lg:flex-row gap-4 md:px-20">
+              <div className="space-y-4 lg:w-3/4">
                 {cart.map((item) => {
                   const category = categories.find(
                     (c) => c.id == item.product.type,
@@ -327,7 +325,7 @@ export default function Cart() {
                   );
                 })}
               </div>
-              <div className="md:w-1/4">
+              <div className="lg:w-1/4">
                 <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6">
                   <h2 className="text-lg font-semibold mb-4">Sumar comandă</h2>
                   <div className="flex justify-between mb-2">

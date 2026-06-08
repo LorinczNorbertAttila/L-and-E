@@ -41,7 +41,7 @@ export default function CategorySection({ category, products }) {
 
   return (
     <div className="mb-10 px-4 relative">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex mx-20 justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-white">
           {category.ro || category.ro_short}
         </h2>
@@ -66,22 +66,23 @@ export default function CategorySection({ category, products }) {
           </button>
         )}
         {/* Product container with horizontal scroll */}
-        <div
-          ref={scrollRef}
-          className="flex overflow-x-hidden scroll-smooth gap-10 px-12 py-6 hide-scrollbar"
-          tabIndex={0}
-        >
-          {visibleProducts.map((product) => (
-            <div
-              key={product.id}
-              className="shrink-0 snap-start"
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <ProductCard product={product} />
-            </div>
-          ))}
+        <div className="mx-20">
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-hidden scroll-smooth gap-10 py-6 hide-scrollbar"
+            tabIndex={0}
+          >
+            {visibleProducts.map((product) => (
+              <div
+                key={product.id}
+                className="shrink-0 snap-start"
+                style={{ scrollSnapAlign: "start" }}
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
         </div>
-
         {/* Scroll right button */}
         {canScroll && (
           <button

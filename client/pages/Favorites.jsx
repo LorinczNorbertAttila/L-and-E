@@ -5,8 +5,8 @@ import { useCategory } from "../src/contexts/CategoryContext";
 import { useCart } from "../src/contexts/CartContext";
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart } from "lucide-react";
-import { Button } from "@material-tailwind/react";
 import ProductModal from "../src/components/ProductModal";
+import RippleButton from "../src/components/RippleButton";
 
 export default function Favorites() {
   const { favorites = [], removeFromFavorites } = useAuth();
@@ -15,10 +15,11 @@ export default function Favorites() {
   const [loadingCartId, setLoadingCartId] = useState(null);
   const [loadingFavoriteId, setLoadingFavoriteId] = useState(null);
   const { addToCart } = useCart();
-  const [open, setOpen] = useState(false); // State for controlling modal visibility
+  const [openProductId, setOpenProductId] = useState(null); // State for controlling modal visibility
 
   // Handles removing a product from favorites
-  const handleRemoveFavorite = async (id) => {
+  const handleRemoveFavorite = async (e, id) => {
+    e.stopPropagation(); // Prevents card click from being triggered
     setLoadingFavoriteId(id);
     try {
       await removeFromFavorites(id);
@@ -32,7 +33,8 @@ export default function Favorites() {
   };
 
   // Handles adding the product to the cart
-  const handleCartClick = async (product) => {
+  const handleCartClick = async (e, product) => {
+    e.stopPropagation(); // Prevents card click from being triggered
     setLoadingCartId(product.id); // Set loading state for this product
     try {
       await addToCart(product.id, product.mass, product.price); // Try adding product to cart
@@ -44,10 +46,10 @@ export default function Favorites() {
   };
 
   // Open the modal
-  const handleOpen = () => setOpen(true);
+  const handleOpen = (id) => setOpenProductId(id);
 
   // Close the modal
-  const closeModal = () => setOpen(false);
+  const closeModal = () => setOpenProductId(null);
 
   return (
     <>
@@ -67,66 +69,71 @@ export default function Favorites() {
                 categories.find((c) => Number(c.id) === item.type) || {};
               return (
                 <div key={item.id} className="contents">
-                <div
-                  className="bg-white bg-opacity-85 cursor-pointer rounded-md shadow-md flex relative"
-                  onClick={handleOpen}
-                >
-                  <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-md">
-                    <img
-                      src={item.imageUrl || ""}
-                      alt={item.name}
-                      className="object-contain h-full"
-                    />
-                  </div>
-                  <div className="p-4 flex flex-row justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold">{item.name}</h3>
-                      <p>
-                        {category.ro_short || category.ro || "Fără categorie"}
+                  <div
+                    className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 shadow-mdcursor-pointer rounded-xl shadow-md flex relative cursor-pointer"
+                    onClick={() => handleOpen(item.id)}
+                  >
+                    <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-xl">
+                      <img
+                        src={item.imageUrl || ""}
+                        alt={item.name}
+                        className="object-contain h-full"
+                      />
+                    </div>
+                    <div className="p-4 flex flex-row justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold">{item.name}</h3>
+                        <p>
+                          {category.ro_short || category.ro || "Fără categorie"}
+                        </p>
+                        <p>{item.mass}</p>
+                      </div>
+                      <p className="absolute right-4 p-4 font-bold">
+                        {item.price} RON
                       </p>
-                      <p>{item.mass}</p>
-                    </div>
-                    <p className="absolute right-4 p-4 font-bold">
-                      {item.price} RON
-                    </p>
-                    <div className="absolute right-4 p-4 bottom-4 flex gap-2">
-                      {item.quantity === 0 ? (
-                        <span className="flex gap-2 items-center text-sm font-semibold text-red-600">
-                          Indisponibil
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          aria-label="Adaugă în coș"
-                          disabled={loadingCartId === item.id}
-                          onClick={() => handleCartClick(item)}
-                          className="flex gap-2 items-center rounded-lg p-2 bg-teal-600 text-white hover:bg-teal-800"
-                        >
-                          <span className="hidden md:inline">
-                            {loadingCartId === item.id
-                              ? "Adăugare..."
-                              : "Adaugă în coș"}
+                      <div className="absolute right-4 p-4 bottom-4 flex gap-2">
+                        {item.quantity === 0 ? (
+                          <span className="flex gap-2 items-center text-sm font-semibold text-red-600">
+                            Indisponibil
                           </span>
-                          <ShoppingCart fill="white" className="relative" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        aria-label="Șterge din favorite"
-                        disabled={loadingFavoriteId === item.id}
-                        onClick={() => handleRemoveFavorite(item.id)}
-                        className="flex gap-2 items-center rounded-lg p-2 bg-red-600 text-white hover:bg-red-800"
-                      >
-                        <span className="hidden md:inline">
-                          Șterge din favorite
-                        </span>
-                        <Heart fill="white" />
-                      </Button>
+                        ) : (
+                          <RippleButton
+                            variant="primary"
+                            aria-label="Adaugă în coș"
+                            disabled={loadingCartId === item.id}
+                            onClick={(e) => handleCartClick(e, item)}
+                            className="flex gap-2 items-center p-2 bg-teal-600 hover:bg-teal-800"
+                          >
+                            <span className="hidden lg:inline">
+                              {loadingCartId === item.id
+                                ? "Adăugare..."
+                                : "Adaugă în coș"}
+                            </span>
+                            <ShoppingCart fill="white" className="relative" />
+                          </RippleButton>
+                        )}
+                        <RippleButton
+                          variant="primary"
+                          aria-label="Șterge din favorite"
+                          disabled={loadingFavoriteId === item.id}
+                          onClick={(e) => handleRemoveFavorite(e, item.id)}
+                          className="flex gap-2 items-center p-2 bg-red-600 hover:bg-red-800"
+                        >
+                          <span className="hidden lg:inline">
+                            Șterge din favorite
+                          </span>
+                          <Heart fill="white" />
+                        </RippleButton>
+                      </div>
                     </div>
                   </div>
-                </div>
-                {/* Product Details Modal */}
-                <ProductModal key={`modal-${item.id}`} open={open} onClose={closeModal} product={item} />
+                  {/* Product Details Modal */}
+                  <ProductModal
+                    key={`modal-${item.id}`}
+                    open={openProductId === item.id}
+                    onClose={closeModal}
+                    product={item}
+                  />
                 </div>
               );
             })}

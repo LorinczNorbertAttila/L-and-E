@@ -8,9 +8,9 @@ export default function About() {
     <>
       <div className="min-h-screen flex flex-col items-center justify-start p-4 md:p-20 gap-10">
         <Link to="/">
-        <img src={logoWhite} className="w-52 h-52 mb-12" alt="lande" />
-      </Link>
-        <div className="flex flex-col items-center justify-center bg-white bg-opacity-80 backdrop-blur-2xl p-6 rounded-md shadow-md">
+          <img src={logoWhite} className="w-52 h-52 mb-12" alt="lande" />
+        </Link>
+        <div className="flex flex-col items-center justify-center bg-white/80 backdrop-blur-2xl p-6 rounded-md shadow-md">
           <p className="indent-8 mb-4">
             Fitofarmacia L&E AGROTEAM SRL este partenerul de încredere al
             tuturor celor pasionați de agricultură, fie că este vorba despre

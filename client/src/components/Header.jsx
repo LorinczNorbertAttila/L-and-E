@@ -8,21 +8,13 @@ import {
   ChevronDown,
   Heart,
   ShoppingBasket,
-  Upload, 
+  Upload,
   List,
 } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
-import {
-  Navbar,
-  Avatar,
-  Menu,
-  MenuHandler,
-  Button,
-  MenuList,
-  MenuItem,
-} from "@material-tailwind/react";
 import logo from "../assets/images/lande.png";
+import RippleButton from "./RippleButton";
 
 export default function Header() {
   const { currentUser, isAdmin, logout } = useAuth();
@@ -37,14 +29,14 @@ export default function Header() {
   // Memoized calculation of the total number of items in the cart
   const itemCount = React.useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
-    [cart]
+    [cart],
   );
 
   // Memoized calculation of the total price of items in the cart
   const totalPrice = React.useMemo(
     () =>
       cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0),
-    [cart]
+    [cart],
   );
 
   useEffect(() => {
@@ -73,84 +65,119 @@ export default function Header() {
   }
 
   function ProfileMenu() {
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+      function handleClickOutside(event) {
+        if (menuRef.current && !menuRef.current.contains(event.target)) {
+          setIsMenuOpen(false);
+        }
+      }
+
+      document.addEventListener("mousedown", handleClickOutside);
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
 
     return (
-      <Menu open={isMenuOpen} handler={setIsMenuOpen} placement="bottom-end">
-      <MenuHandler>
-        <Button
-        variant="text"
-        color="blue-gray"
-        className="flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 lg:ml-auto"
+      <div className="relative lg:ml-auto" ref={menuRef}>
+        <RippleButton
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          className="flex items-center gap-1 rounded-full py-0.5 pr-2 pl-0.5 hover:bg-slate-500/10"
+          variant="default"
         >
-        <Avatar
-          src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
-          size="sm"
-          alt="profile_picture"
-        />
-        <ChevronDown
-          strokeWidth={2.5}
-          className={`h-3 w-3 transition-transform ${
-          isMenuOpen ? "rotate-180" : ""
+          <img
+            src={currentUser?.img || import.meta.env.VITE_DEFAULT_PICTURE}
+            alt="profile_picture"
+            className="h-8 w-8 rounded-full object-cover"
+          />
+          <ChevronDown
+            strokeWidth={2.5}
+            className={`h-3 w-3 transition-transform duration-200 text-slate-500 ${
+              isMenuOpen ? "-rotate-180" : ""
+            }`}
+          />
+        </RippleButton>
+        <div
+          className={`absolute right-0 z-100 mt-2 w-64 origin-top-right rounded-xl border border-gray-200 bg-white text-sm p-1 shadow-lg transition-all duration-200 ${
+            isMenuOpen
+              ? "visible scale-100 opacity-100"
+              : "invisible scale-95 opacity-0"
           }`}
-        />
-        </Button>
-      </MenuHandler>
-      <MenuList className="p-1">
-        <Link to="/profile">
-        <MenuItem className="flex items-center gap-2 rounded">
-          <User className="h-4 w-4" />
-          <span className="font-normal">Profilul meu</span>
-        </MenuItem>
-        </Link>
-        <Link to="/favorites">
-        <MenuItem className="flex items-center gap-2 rounded">
-          <Heart className="h-4 w-4" />
-          <span className="font-normal">Favoritele mele</span>
-        </MenuItem>
-        </Link>
-        <Link to="/orders">
-        <MenuItem className="flex items-center gap-2 rounded">
-          <ShoppingBasket className="h-4 w-4" />
-          <span className="font-normal">Comenzile mele</span>
-        </MenuItem>
-        </Link>
-        {isAdmin && (
-        <>
-          <Link to="/admin-upload">
-          <MenuItem className="flex items-center gap-2 rounded">
-            <Upload  className="h-4 w-4" />
-            <span className="font-normal">Panou de administrare (Upload)</span>
-          </MenuItem>
-          </Link>
-          <Link to="/admin-order">
-          <MenuItem className="flex items-center gap-2 rounded">
-            <List  className="h-4 w-4" />
-            <span className="font-normal">Panou de administrare (Comenzi)</span>
-          </MenuItem>
-          </Link>
-        </>
-        )}
-        <MenuItem
-        onClick={handleLogout}
-        disabled={loading}
-        className="flex items-center gap-2 rounded hover:bg-red-500/10 focus:bg-red-500/10 active:bg-red-500/10"
         >
-        <Power className="h-4 w-4 text-red-500" />
-        <span className="font-normal text-red-500">
-          Sign Out
-        </span>
-        </MenuItem>
-      </MenuList>
-      </Menu>
+          <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+              <User className="h-4 w-4" />
+              <span>Profilul meu</span>
+            </div>
+          </Link>
+
+          <Link to="/favorites" onClick={() => setIsMenuOpen(false)}>
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+              <Heart className="h-4 w-4" />
+              <span>Favoritele mele</span>
+            </div>
+          </Link>
+
+          <Link to="/orders" onClick={() => setIsMenuOpen(false)}>
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+              <ShoppingBasket className="h-4 w-4" />
+              <span>Comenzile mele</span>
+            </div>
+          </Link>
+          {isAdmin && (
+            <>
+              <Link to="/admin-upload" onClick={() => setIsMenuOpen(false)}>
+                <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+                  <Upload className="h-4 w-4" />
+                  <span>Panou de administrare (Upload)</span>
+                </div>
+              </Link>
+              <Link to="/admin-order" onClick={() => setIsMenuOpen(false)}>
+                <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+                  <List className="h-4 w-4" />
+                  <span>Panou de administrare (Comenzi)</span>
+                </div>
+              </Link>
+            </>
+          )}
+          <RippleButton
+            onClick={handleLogout}
+            disabled={loading}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-red-500/10"
+            variant="danger"
+          >
+            <Power className="h-4 w-4 text-red-500" />
+            <span className="text-red-500">Sign Out</span>
+          </RippleButton>
+        </div>
+      </div>
     );
   }
 
   function CategoryNavigation({ categories }) {
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    // close dropdown when clicking outside
+    useEffect(() => {
+      function handleClickOutside(event) {
+        if (menuRef.current && !menuRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      }
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 relative">
+        {/* Horizontal list */}
         <div className="hidden lg:flex gap-10">
           {categories?.length > 0 ? (
             categories.map((category) => (
@@ -167,47 +194,51 @@ export default function Header() {
           )}
         </div>
 
-        <div className="block lg:hidden">
-          <Menu
-            open={isMenuOpen}
-            handler={setIsMenuOpen}
-            placement="bottom-start"
-            allowHover={false}
+        {/* Dropdown */}
+        <div className="block lg:hidden relative" ref={menuRef}>
+          <button
+            onClick={() => setIsOpen((prev) => !prev)}
+            className="text-gray-800 font-semibold flex items-center gap-2 text-sm capitalize"
           >
-            <MenuHandler>
-              <Button
-                variant="text"
-                size="sm"
-                className="text-gray-800 font-semibold flex items-center gap-2 text-sm capitalize"
-              >
-                Produse
-                <ChevronDown
-                  strokeWidth={2.5}
-                  className={`h-3 w-3 transition-transform ${
-                    isMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
-            </MenuHandler>
-            <MenuList>
-              {categories?.length > 0 ? (
-                categories.map((category) => (
-                  <Link key={category.id} to={`/category/${category.id}`}>
-                    <MenuItem>{category.ro}</MenuItem>
-                  </Link>
-                ))
-              ) : (
-                <MenuItem disabled>Nu există categorii</MenuItem>
-              )}
-            </MenuList>
-          </Menu>
+            Produse
+            <ChevronDown
+              strokeWidth={2.5}
+              className={`h-3 w-3 transition-transform  ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          <div
+            className={`absolute left-0 mt-2 w-48 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-lg z-100 transition-all duration-200 ${
+              isOpen
+                ? "visible scale-100 opacity-100"
+                : "invisible scale-95 opacity-0"
+            }`}
+          >
+            {categories?.length > 0 ? (
+              categories.map((category) => (
+                <Link
+                  key={category.id}
+                  to={`/category/${category.id}`}
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  {category.ro}
+                </Link>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-gray-500">
+                Nu există categorii
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <Navbar className="mx-auto max-w-screen-2xl bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 p-2 shadow-md rounded-3xl justify-center items-center">
+    <nav className="relative z-50 mx-auto max-w-7xl bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 p-2 shadow-md rounded-3xl justify-center items-center">
       <div className="flex justify-between items-center">
         <div className="flex items-center md:gap-10 gap-2">
           <Link className="pl-3" to="/">
@@ -223,7 +254,9 @@ export default function Header() {
               <div
                 data-testid="cart-item-count"
                 className={`absolute top-3 right-4 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full ${
-                  animate ? "animate-jump animate-duration-[300ms]" : ""
+                  animate
+                    ? "motion-scale-in-50 motion-opacity-in-[0%] motion-duration-300 motion-ease-spring-bouncier"
+                    : ""
                 }`}
               >
                 {itemCount.toFixed(0)}
@@ -236,6 +269,6 @@ export default function Header() {
           </Link>
         </ul>
       </div>
-    </Navbar>
+    </nav>
   );
 }

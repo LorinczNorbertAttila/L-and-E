@@ -1,13 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Select,
-  Option,
-  Button,
-} from "@material-tailwind/react";
+import RippleButton from "./RippleButton";
 
 export default function EditableProductCard({
   product,
@@ -70,70 +62,103 @@ export default function EditableProductCard({
   };
 
   return (
-    <Card className="bg-white bg-opacity-90 p-4 w-80 shadow-md">
+    <div className="relative flex flex-col bg-clip-border rounded-xl text-gray-700 bg-white bg-opacity-90 p-4 w-80 shadow-md">
       {/* Image preview */}
-      <CardHeader className="h-40 flex justify-center" onClick={onImageClick}>
+      <div
+        className="relative bg-clip-border mx-4 rounded-xl overflow-hidden bg-white text-gray-700 shadow-lg -mt-6 h-40 flex justify-center"
+        onClick={onImageClick}
+      >
         <img
           src={previewURL}
           alt={product.name || "Imagine produs"}
           className="object-contain h-full cursor-pointer"
           style={{ userSelect: "none" }}
         />
-      </CardHeader>
+      </div>
 
-      <CardBody className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 p-6">
         <div>
-          <Input
-            label="Nume produs *"
+          <label htmlFor="name" className="text-xs px-2">
+            Nume produs
+          </label>
+          <input
+            autoComplete="off"
+            id="name"
+            type="text"
+            required
+            className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
             value={product.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            error={!!errors.name}
           />
           {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
         </div>
-        <Input
-          label="Greutate"
-          value={product.mass ?? ""}
-          onChange={(e) => handleChange("mass", e.target.value)}
-        />
         <div>
-          <Input
-            label="Preț (RON) *"
+          <label htmlFor="mass" className="text-xs px-2">
+            Greutate
+          </label>
+          <input
+            autoComplete="off"
+            id="mass"
+            type="text"
+            required
+            className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
+            value={product.mass}
+            onChange={(e) => handleChange("mass", e.target.value)}
+          />
+          {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+        </div>
+        <div>
+          <label htmlFor="price" className="text-xs px-2">
+            Preț (RON) *
+          </label>
+          <input
+            autoComplete="off"
+            id="price"
             type="number"
-            min={0}
+            required
+            className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
             value={product.price ?? ""}
             onChange={(e) =>
               handleChange(
                 "price",
-                e.target.value === "" ? "" : parseFloat(e.target.value)
+                e.target.value === "" ? "" : parseFloat(e.target.value),
               )
             }
-            error={!!errors.price}
           />
           {errors.price && (
             <p className="text-red-500 text-xs">{errors.price}</p>
           )}
         </div>
         <div>
-          <Input
-            label="Stoc *"
+          <label htmlFor="stock" className="text-xs px-2">
+            Stoc
+          </label>
+          <input
+            autoComplete="off"
+            id="stock"
             type="number"
-            min={0}
+            required
+            className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
             value={product.quantity ?? ""}
             onChange={(e) =>
               handleChange(
                 "quantity",
-                e.target.value === "" ? "" : parseInt(e.target.value)
+                e.target.value === "" ? "" : parseInt(e.target.value),
               )
             }
-            error={!!errors.quantity}
           />
           {errors.quantity && (
             <p className="text-red-500 text-xs">{errors.quantity}</p>
           )}
         </div>
-        <Input
-          label="Descriere"
+        <label htmlFor="description" className="text-xs px-2">
+          Descriere
+        </label>
+        <input
+          autoComplete="off"
+          id="description"
+          type="text"
+          className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
           value={product.description ?? ""}
           onChange={(e) => handleChange("description", e.target.value)}
         />
@@ -146,30 +171,33 @@ export default function EditableProductCard({
           style={{ display: "none" }}
         />
         <div>
-          <Select
-            label="Categorie"
+          <label htmlFor="categorySelect" className="text-xs px-2">
+            Categorie
+          </label>
+          <select
+            id="categorySelect"
+            onChange={(e) => handleChange("type", parseInt(e.target.value))}
             value={String(product.type)}
-            onChange={(val) => handleChange("type", parseInt(val))}
-            error={!!errors.type}
+            className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600"
           >
             {categories.map((cat) => (
-              <Option key={cat.id} value={String(cat.id)}>
+              <option key={cat.id} value={String(cat.id)}>
                 {cat.ro_short || cat.ro}
-              </Option>
+              </option>
             ))}
-          </Select>
+          </select>
           {errors.type && <p className="text-red-500 text-xs">{errors.type}</p>}
         </div>
         {onDelete && (
-          <Button
-            variant="outlined"
-            color="red"
+          <RippleButton
+            variant="secondary"
             onClick={() => onDelete(index)}
+            className="w-full mt-4 px-4 py-2 border-red-600 text-red-600"
           >
             Șterge
-          </Button>
+          </RippleButton>
         )}
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 }

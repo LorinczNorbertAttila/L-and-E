@@ -1,8 +1,8 @@
 import React, { useRef, useState } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@material-tailwind/react";
 import logoWhite from "../src/assets/images/lande_white.png";
+import RippleButton from "../src/components/RippleButton";
 
 export default function SignIn() {
   const emailRef = useRef();
@@ -82,7 +82,7 @@ export default function SignIn() {
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
           {/* Background gradient for form */}
-          <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-teal-800 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-green-600 to-teal-800 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
           <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
             <div className="max-w-md mx-auto">
               <div>
@@ -100,7 +100,7 @@ export default function SignIn() {
                       type="email"
                       ref={emailRef}
                       required
-                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
+                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-hidden focus:border-green-600"
                       placeholder="Email"
                       onChange={(e) => {
                         setError("");
@@ -122,7 +122,7 @@ export default function SignIn() {
                       type="password"
                       ref={passRef}
                       required
-                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
+                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-hidden focus:border-green-600"
                       placeholder="Password"
                       onChange={(e) => {
                         setError("");
@@ -137,14 +137,14 @@ export default function SignIn() {
                   </div>
                   {/* Submit button and link to password reset */}
                   <div className="relative">
-                    <Button
-                      size="sm"
+                    <RippleButton
                       disabled={loading}
                       type="submit"
-                      className="bg-teal-800 text-white"
+                      className="bg-teal-800 px-4 py-2"
+                      variant="primary"
                     >
                       Continuă
-                    </Button>
+                    </RippleButton>
                     <Link
                       to="/forgot-password"
                       className="text-base text-teal-800 hover:underline p-2"
@@ -154,7 +154,7 @@ export default function SignIn() {
                   </div>
                   {/* Display error message if there is one*/}
                   {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-sm relative">
                       {error}
                     </div>
                   )}
@@ -170,11 +170,9 @@ export default function SignIn() {
             </h1>
             <div className="w-full flex flex-col justify-center gap-2">
               {/* Google sign-in button */}
-              <Button
-                size="md"
-                variant="outlined"
-                color="blue-gray"
-                className="flex items-center gap-3"
+              <RippleButton
+                variant="secondary"
+                className="flex items-center gap-3 px-6 py-3"
                 onClick={handleGoogleAuth}
                 disabled={loading}
               >
@@ -184,12 +182,10 @@ export default function SignIn() {
                   className="h-6 w-6"
                 />
                 Continuă cu Google
-              </Button>
-              <Button
-                size="md"
-                variant="outlined"
-                color="blue-gray"
-                className="flex items-center gap-3"
+              </RippleButton>
+              <RippleButton
+                variant="secondary"
+                className="flex items-center gap-3 px-6 py-3"
                 onClick={handleFacebookAuth}
                 disabled={loading}
               >
@@ -199,7 +195,7 @@ export default function SignIn() {
                   className="h-6 w-6"
                 />
                 Continuă cu Facebook
-              </Button>
+              </RippleButton>
             </div>
           </div>
         </form>

@@ -1,5 +1,5 @@
 import React from "react";
-import background from "../assets/images/background.jpg"; 
+import background from "../assets/images/background.jpg";
 
 export default function Background({ children }) {
   return (
@@ -8,7 +8,7 @@ export default function Background({ children }) {
       <div className="absolute inset-0 z-0">
         <img
           src={background}
-          className="w-full h-full object-cover filter blur-sm brightness-75 scale-110"
+          className="w-full h-full object-cover filter blur-xs brightness-75 scale-110"
         />
       </div>
       {/* Content */}

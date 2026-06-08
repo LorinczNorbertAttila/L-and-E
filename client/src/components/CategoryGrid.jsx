@@ -11,7 +11,7 @@ export default function CategoryGrid({ products }) {
     gap-x-4 gap-y-16
     px-4 py-6 md:px-8 lg:px-16
     justify-items-center
-    ${!hasProducts ? "flex-grow" : ""}`}
+    ${!hasProducts ? "grow" : ""}`}
     >
       {products?.length > 0 ? (
         products.map((product) => (

@@ -3,7 +3,7 @@ import Header from "../src/components/Header";
 import EditableProductCard from "../src/components/EditableProductCard";
 import { useCategory } from "../src/contexts/CategoryContext";
 import { useAuth } from "../src/contexts/AuthContext";
-import { Button } from "@material-tailwind/react";
+import RippleButton from "../src/components/RippleButton";
 import { uploadProductImage } from "../src/firebase/storage";
 
 // Helper function: removes fields with null values from an object
@@ -50,7 +50,7 @@ export default function UploadProducts() {
             Authorization: `Bearer ${token}`,
           },
           body: formData,
-        }
+        },
       );
 
       const data = await res.json();
@@ -58,7 +58,7 @@ export default function UploadProducts() {
         setPreviewProducts(data.data);
         setStatusType("success");
         setStatus(
-          `Au fost încărcate ${data.data.length} produse pentru previzualizare`
+          `Au fost încărcate ${data.data.length} produse pentru previzualizare`,
         );
       } else {
         setStatusType("error");
@@ -92,8 +92,10 @@ export default function UploadProducts() {
 
     if (invalidProducts.length > 0) {
       setStatusType("error");
-      const productNames = invalidProducts.map(p => p.name).join(", ");
-      setStatus(`Eroare: Verifică câmpurile obligatorii pentru: ${productNames}`);
+      const productNames = invalidProducts.map((p) => p.name).join(", ");
+      setStatus(
+        `Eroare: Verifică câmpurile obligatorii pentru: ${productNames}`,
+      );
       return;
     }
     setImageUploadErrors([]);
@@ -116,7 +118,7 @@ export default function UploadProducts() {
               removeNullFields({
                 ...cleanProduct,
                 imageUrl: url,
-              })
+              }),
             );
           } catch (err) {
             imageErrors.push({
@@ -129,7 +131,7 @@ export default function UploadProducts() {
               removeNullFields({
                 ...cleanProduct,
                 imageUrl: url,
-              })
+              }),
             );
           }
         } else {
@@ -148,7 +150,7 @@ export default function UploadProducts() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ products: updatedProducts }),
-        }
+        },
       );
 
       const data = await res.json();
@@ -167,7 +169,7 @@ export default function UploadProducts() {
         setStatusType(
           (data.errors && data.errors.length > 0) || imageErrors.length > 0
             ? "error"
-            : "success"
+            : "success",
         );
         setStatus(msg);
         setPreviewProducts([]);
@@ -200,8 +202,8 @@ export default function UploadProducts() {
     statusType === "success"
       ? "text-green-700 bg-green-100 "
       : statusType === "error"
-      ? "text-red-500 bg-red-100"
-      : "text-black";
+        ? "text-red-500 bg-red-100"
+        : "text-black";
 
   return (
     <>
@@ -210,7 +212,7 @@ export default function UploadProducts() {
         <Header />
       </div>
       <div className="min-h-screen flex flex-col items-center justify-start p-4 gap-10">
-        <div className="flex flex-col items-center justify-center bg-white bg-opacity-80 backdrop-blur-2xl p-6 rounded-md shadow-md">
+        <div className="flex flex-col items-center justify-center bg-white/80 backdrop-blur-2xl p-6 rounded-md shadow-md">
           <h1>CSV upload:</h1>
           <input
             ref={fileInputRef}
@@ -220,13 +222,14 @@ export default function UploadProducts() {
             className="hidden"
             disabled={loading}
           />
-          <Button
+          <RippleButton
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             disabled={loading}
-            className="mb-2"
+            className="bg-gray-900 mb-2 px-6 py-3"
+            variant="primary"
           >
             {loading ? "Procesare..." : "Selectează fișier CSV"}
-          </Button>
+          </RippleButton>
           <p className={`mt-2 font-semibold px-4 py-2 ${statusColor}`}>
             {status}
           </p>
@@ -275,13 +278,14 @@ export default function UploadProducts() {
             />
           ))}
         </div>
-        <Button
-          className="mt-6"
+        <RippleButton
+          className="bg-gray-900 mt-6 px-6 py-3"
           onClick={handleFinalSave}
           disabled={previewProducts.length === 0 || loading}
+          variant="primary"
         >
           {loading ? "Salvare în curs..." : "Salvează în baza de date"}
-        </Button>
+        </RippleButton>
       </div>
     </>
   );

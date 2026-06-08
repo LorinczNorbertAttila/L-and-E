@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
-import {
-  Alert,
-  Button,
-  IconButton,
-  Input,
-  Select,
-  Option,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-} from "@material-tailwind/react";
 import CustomAlert from "./CustomAlert";
+import RippleButton from "./RippleButton";
 import countiesData from "../assets/json/countiesList.json";
 
 const ERROR_MESSAGES = {
@@ -41,22 +30,19 @@ function LocationSelector({
       <label htmlFor={selectId} className="mt-2 px-2">
         {label}
       </label>
-      <Select
+      <select
         id={selectId}
         onChange={onChange}
         value={value}
-        className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600"
-        labelProps={{
-          className: "hidden",
-        }}
+        className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600"
         disabled={disabled}
       >
         {options.map((option, index) => (
-          <Option key={`${option.value}-${index}`} value={option.value}>
+          <option key={`${option.value}-${index}`} value={option.value}>
             {option.label}
-          </Option>
+          </option>
         ))}
-      </Select>
+      </select>
       {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
     </div>
   );
@@ -73,7 +59,7 @@ export default function UserInfoModal({
 }) {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedCounty, setSelectedCounty] = useState(null);
+  const [selectedCounty, setSelectedCounty] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
@@ -101,23 +87,18 @@ export default function UserInfoModal({
       setName(currentUser?.name || "");
       setPhoneNumber(currentUser?.tel || "");
       if (currentUser?.addressData) {
-        setSelectedCounty(currentUser.addressData.county || null);
+        setSelectedCounty(currentUser.addressData.county || "");
         setCity(currentUser.addressData.city || "");
         setAddress(currentUser.addressData.address || "");
         setPostalCode(currentUser.addressData.postalCode || "");
       }
     }
-  }, [
-    open,
-    currentUser?.name,
-    currentUser?.tel,
-    currentUser?.addressData,
-  ]);
+  }, [open, currentUser?.name, currentUser?.tel, currentUser?.addressData]);
 
   const closeModal = () => {
     setName("");
     setPhoneNumber("");
-    setSelectedCounty(null);
+    setSelectedCounty("");
     setCity("");
     setAddress("");
     setPostalCode("");
@@ -226,26 +207,64 @@ export default function UserInfoModal({
     }
   }
 
+  // Close modal with ESC
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") closeModal();
+    };
+
+    if (open) {
+      document.addEventListener("keydown", handleEsc);
+
+      // Get scrollbar width
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+
+      // Prevent layout shift
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+
+      document.body.style.overflow = "auto";
+      document.body.style.paddingRight = "0px";
+    };
+  }, [open]);
+
   return (
-    <>
-      <Dialog
-        open={open}
-        handler={closeModal}
-        aria-labelledby="address-modal-title"
-        aria-describedby="address-modal-description"
-        className="w-full max-w-xs sm:max-w-md"
+    <div
+      className={`fixed inset-0 z-9999 flex items-center justify-center p-4 transition-all duration-300 ${
+        open ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+    >
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/50 backdrop-blur transition-opacity duration-300 ease-in-out ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {/* Modal */}
+      <div
+        className={`relative w-full md:w-3/4 lg:w-3/5 2xl:w-2/5 max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl transition-all duration-300 ease-in-out ${
+          open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        }`}
       >
-        <DialogHeader id="address-modal-title">
-          Date personale
-          <IconButton
-            variant="text"
+        <div className="flex items-center shrink-0 p-4 text-slate-900 antialiased font-sans text-2xl font-semibold leading-snug">
+          Datele personale
+          {/* Close Button */}
+          <RippleButton
             onClick={closeModal}
-            className="!absolute top-2 right-2 text-teal-800"
+            className="absolute! top-2 right-2 z-10 text-teal-800"
+            variant="icon"
           >
             <X />
-          </IconButton>
-        </DialogHeader>
-        <DialogBody id="address-modal-description">
+          </RippleButton>
+        </div>
+        {/* Content */}
+        <div className="relative p-4 text-slate-500 antialiased font-sans text-base font-light leading-relaxed">
           <form onSubmit={handleSave} className="flex flex-col">
             <label htmlFor="fullName" className="px-2">
               Nume și prenume
@@ -255,7 +274,7 @@ export default function UserInfoModal({
               id="fullName"
               type="text"
               required
-              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 mb-2 p-3"
+              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 mb-2 p-3"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -270,7 +289,7 @@ export default function UserInfoModal({
               id="phoneNumber"
               type="tel"
               required
-              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 mb-2 p-3"
+              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 mb-2 p-3"
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneError("");
@@ -288,7 +307,7 @@ export default function UserInfoModal({
                 label="Județ"
                 options={countyOptions}
                 value={selectedCounty}
-                onChange={setSelectedCounty}
+                onChange={(e) => setSelectedCounty(e.target.value)}
                 error={countyError}
               />
               <div className="w-full sm:w-1/2 sm:pr-2 relative">
@@ -301,7 +320,7 @@ export default function UserInfoModal({
                   name="city"
                   type="text"
                   required
-                  className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
+                  className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   disabled={!selectedCounty}
@@ -320,7 +339,7 @@ export default function UserInfoModal({
               name="address"
               type="text"
               required
-              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
+              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               disabled={!selectedCounty}
@@ -337,7 +356,7 @@ export default function UserInfoModal({
               name="postalcode"
               type="text"
               required
-              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-blue-gray-700 focus:outline-none focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
+              className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
               value={postalCode}
               onChange={(e) => {
                 const onlyNums = e.target.value.replace(/[^0-9]/g, "");
@@ -354,28 +373,28 @@ export default function UserInfoModal({
             {saveError && (
               <p className="text-red-600 text-sm mt-1">{saveError}</p>
             )}
-            <DialogFooter className="mt-2 flex justify-center">
-              <Button
-                size="sm"
+            <div className="items-center shrink-0 flex-wrap p-4 text-slate-500 mt-2 flex justify-center">
+              <RippleButton
+                variant="primary"
                 type="submit"
                 disabled={loading}
-                className="bg-teal-800 text-white rounded-md"
+                className="bg-teal-800 px-4 py-2"
               >
                 Actualizează
-              </Button>
-            </DialogFooter>
+              </RippleButton>
+            </div>
           </form>
-        </DialogBody>
-      </Dialog>
-      <CustomAlert
-        error={!saveSuccess}
-        message={
-          saveSuccess
-            ? "Datele au fost salvate cu succes."
-            : "Eroare la salvarea datelor."
-        }
-        open={showAlert}
-      />
-    </>
+        </div>
+        <CustomAlert
+          error={!saveSuccess}
+          message={
+            saveSuccess
+              ? "Datele au fost salvate cu succes."
+              : "Eroare la salvarea datelor."
+          }
+          open={showAlert}
+        />
+      </div>
+    </div>
   );
 }

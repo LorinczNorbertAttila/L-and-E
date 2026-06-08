@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { auth, onAuthStateChanged } from "../firebase/firebase.js";
 import { X } from "lucide-react";
-import { Dialog, DialogBody, IconButton } from "@material-tailwind/react";
+import RippleButton from "../components/RippleButton.jsx";
 
 // Create a context for the cart
 const CartContext = React.createContext();
@@ -49,7 +49,7 @@ export default function CartProvider({ children }) {
     if (uid) {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/cart/details/${uid}`
+          `${import.meta.env.VITE_API_URL}/api/cart/details/${uid}`,
         );
         const result = await res.json();
         if (res.ok && result.success) {
@@ -74,7 +74,7 @@ export default function CartProvider({ children }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ uid, productId }),
-          }
+          },
         );
 
         const result = await res.json();
@@ -92,7 +92,7 @@ export default function CartProvider({ children }) {
     } else {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/products/${productId}`
+          `${import.meta.env.VITE_API_URL}/api/products/${productId}`,
         );
         const json = await res.json();
         const productData = json.data;
@@ -106,8 +106,8 @@ export default function CartProvider({ children }) {
             cart.map((item) =>
               item.product.id === productId
                 ? { ...item, quantity: item.quantity + 1 }
-                : item
-            )
+                : item,
+            ),
           );
         } else {
           setCart([
@@ -132,7 +132,7 @@ export default function CartProvider({ children }) {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ uid, productId, change }),
-          }
+          },
         );
 
         const result = await res.json();
@@ -159,9 +159,9 @@ export default function CartProvider({ children }) {
           .map((item) =>
             item.product.id === productId
               ? { ...item, quantity: item.quantity + change }
-              : item
+              : item,
           )
-          .filter((item) => item.quantity > 0)
+          .filter((item) => item.quantity > 0),
       );
     }
   }
@@ -178,7 +178,7 @@ export default function CartProvider({ children }) {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ uid, productId }),
-          }
+          },
         );
 
         const result = await res.json();
@@ -196,15 +196,27 @@ export default function CartProvider({ children }) {
   }
 
   // Save order
-  async function placeOrder(userId = null, total, shipping, billing, payingOption) {
+  async function placeOrder(
+    userId = null,
+    total,
+    shipping,
+    billing,
+    payingOption,
+  ) {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/cart/place-order`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uid: userId, total, shipping, billing, payingOption }),
-        }
+          body: JSON.stringify({
+            uid: userId,
+            total,
+            shipping,
+            billing,
+            payingOption,
+          }),
+        },
       );
 
       const result = await res.json();
@@ -239,21 +251,39 @@ export default function CartProvider({ children }) {
         {children}
       </CartContext.Provider>
 
-      <Dialog open={isOutOfStock}>
-        <DialogBody>
-          <IconButton
-            onClick={closeModal}
-            variant="text"
-            className="!absolute top-2 right-2 text-teal-800"
-          >
-            <X />
-          </IconButton>
-          <h2 className="text-xl font-bold mb-4 text-center">Stoc Epuizat</h2>
-          <p className="text-center mb-4">
-            Produsul nu este disponibil în acest moment.
-          </p>
-        </DialogBody>
-      </Dialog>
+      {/* Backdrop */}
+      <div
+        onClick={closeModal}
+        className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur transition-opacity duration-500 ease-in-out ${
+          isOutOfStock
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Modal */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`relative w-full sm:max-w-xl max-w-[90%] max-h-[90vh] overflow-y-auto rounded-xl bg-white text-slate-500 shadow-2xl transition-all duration-300 ease-in-out ${
+            isOutOfStock
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-4"
+          }`}
+        >
+          <div className="p-6">
+            <RippleButton
+              onClick={closeModal}
+              className="absolute! top-2 right-2 z-10 text-teal-800"
+              variant="icon"
+            >
+              <X />
+            </RippleButton>
+            <h2 className="text-xl font-bold text-center">Stoc Limitat</h2>
+            <p className="text-center my-4">
+              Ai atins limita stocului disponibil.
+            </p>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

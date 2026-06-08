@@ -3,12 +3,12 @@ import Header from "../src/components/Header";
 import { useCart } from "../src/contexts/CartContext";
 import { useAuth } from "../src/contexts/AuthContext";
 import { useCategory } from "../src/contexts/CategoryContext";
-import { Button, IconButton, Radio } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 import { Minus, Plus, Pencil, Trash2 } from "lucide-react";
 import UserInfoModal from "../src/components/UserInfoModal";
 import BillingModal from "../src/components/BillingModal";
 import CustomAlert from "../src/components/CustomAlert";
+import RippleButton from "../src/components/RippleButton";
 import { set } from "date-fns";
 
 export default function Cart() {
@@ -134,7 +134,7 @@ export default function Cart() {
           <>
             {currentUser ? (
               <div className="flex flex-col md:flex-row justify-between gap-4 mb-6 lg:px-20">
-                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-lg shadow-md p-6 lg:w-1/4">
+                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6 lg:w-1/4">
                   <h2 className="text-lg font-semibold mb-4">Livrare</h2>
                   {Object.keys(currentUser?.addressData || {}).length > 0 ? (
                     <div className="flex flex-col justify-between mb-2">
@@ -149,24 +149,25 @@ export default function Cart() {
                       <span>{currentUser.addressData.county}</span>
                       <button
                         onClick={() => setShowInfoInput(true)}
-                        className="!absolute bottom-8 right-4  text-teal-800 justify-end"
+                        className="absolute! bottom-8 right-4 text-teal-800 justify-end cursor-pointer"
                       >
                         <Pencil />
                       </button>
                     </div>
                   ) : (
-                    <Button
+                    <RippleButton
                       onClick={() => setShowInfoInput(true)}
-                      className="bg-teal-800 text-white rounded-md px-2 py-1 ml-2"
+                      className="bg-teal-800 px-2 py-1 m-2"
+                      variant="primary"
                     >
                       Adaugă adresă
-                    </Button>
+                    </RippleButton>
                   )}
                 </div>
 
-                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-lg shadow-md p-6 lg:w-1/4">
+                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6 lg:w-1/4">
                   <h2 className="text-lg font-semibold mb-4">Facturare</h2>
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-wrap justify-between items-center mb-4">
                     <label className="flex flex-row items-center gap-2 select-none">
                       <input
                         type="radio"
@@ -198,18 +199,19 @@ export default function Cart() {
                         <span>{currentUser.billingCompanyData.county}</span>
                         <button
                           onClick={() => setBillingInput(true)}
-                          className="!absolute bottom-8 right-4 text-teal-800 justify-end"
+                          className="absolute! bottom-8 right-4 text-teal-800 justify-end cursor-pointer"
                         >
                           <Pencil />
                         </button>
                       </div>
                     ) : (
-                      <Button
+                      <RippleButton
                         onClick={() => setBillingInput(true)}
-                        className="bg-teal-800 text-white rounded-md px-2 py-1 ml-2"
+                        className="bg-teal-800 px-2 py-1 m-2"
+                        variant="primary"
                       >
                         Adaugă adresă de facturare
-                      </Button>
+                      </RippleButton>
                     ))}
                   {billingOption === false && (
                     <div className="flex flex-col justify-between mb-2">
@@ -218,9 +220,9 @@ export default function Cart() {
                   )}
                 </div>
 
-                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-lg shadow-md p-6 lg:w-1/4">
+                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6 lg:w-1/4">
                   <h2 className="text-lg font-semibold mb-4">Plata</h2>
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex flex-wrap justify-between items-center mb-4">
                     <label className="flex flex-row items-center gap-2 select-none">
                       <input
                         type="radio"
@@ -229,7 +231,7 @@ export default function Cart() {
                         onChange={() => setPayingOption("cash")}
                         className="accent-teal-800 hover:accent-teal-600"
                       />
-                      Ramburs, la livrare
+                      Numerar la livrare
                     </label>
                     <label className="flex flex-row items-center gap-2 select-none">
                       <input
@@ -256,9 +258,9 @@ export default function Cart() {
                   return (
                     <div
                       key={item.product.id}
-                      className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-md shadow-md flex relative"
+                      className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md flex relative"
                     >
-                      <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-md">
+                      <div className="w-36 h-48 bg-white flex items-center justify-center rounded-l-xl">
                         <img
                           src={item.product.imageUrl || ""}
                           alt={item.product.name}
@@ -281,53 +283,52 @@ export default function Cart() {
                           {item.product.price} RON
                         </p>
                       </div>
-                      <div className="absolute flex flex-col md:flex-row items-center gap-x-2 right-4 p-4 self-end">
+                      <div className="absolute flex flex-col md:flex-row items-center gap-x-2 right-2 p-4 self-end">
                         <span>Cantitate: </span>
                         <div className="flex items-center gap-x-2">
-                          <IconButton
-                            variant="outlined"
-                            className="rounded-full w-6 h-6"
+                          <RippleButton
+                            className="rounded-full w-6 h-6 border border-gray-900 text-gray-900 hover:cursor-pointer hover:opacity-75 flex items-center justify-center"
                             onClick={() =>
                               handleQuantityChange(item, item.quantity - 1)
                             }
                             disabled={loadingItemId === item.product.id}
+                            variant="default"
                           >
                             <Minus className="w-4 h-4" />
-                          </IconButton>
+                          </RippleButton>
                           <span
-                            className="border rounded bg-white px-2 py-1 w-10 text-center"
+                            className="border rounded-sm bg-white px-2 py-1 w-10 text-center"
                             id={`quantity-${item.product.id}`}
                           >
                             {item.quantity}{" "}
                           </span>
-                          <IconButton
-                            variant="outlined"
-                            className="rounded-full w-6 h-6"
+                          <RippleButton
+                            className="rounded-full w-6 h-6 border border-gray-900 text-gray-900 hover:cursor-pointer hover:opacity-75 flex items-center justify-center"
                             onClick={() =>
                               handleQuantityChange(item, item.quantity + 1)
                             }
                             disabled={loadingItemId === item.product.id}
+                            variant="default"
                           >
                             <Plus className="w-4 h-4" />
-                          </IconButton>
+                          </RippleButton>
                         </div>
-                        <IconButton
-                          variant="text"
-                          className="md:ml-4"
+                        <RippleButton
                           onClick={async () =>
                             await removeFromCart(item.product.id)
                           }
                           disabled={loadingItemId === item.product.id}
+                          variant="icon"
                         >
                           <Trash2 className="w-6 h-6 text-red-800 text-center" />
-                        </IconButton>
+                        </RippleButton>
                       </div>
                     </div>
                   );
                 })}
               </div>
               <div className="md:w-1/4">
-                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-lg shadow-md p-6">
+                <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 rounded-xl shadow-md p-6">
                   <h2 className="text-lg font-semibold mb-4">Sumar comandă</h2>
                   <div className="flex justify-between mb-2">
                     <span>Subtotal</span>
@@ -352,7 +353,7 @@ export default function Cart() {
                   </div>
                   {currentUser ? (
                     <>
-                      <Button
+                      <RippleButton
                         type="submit"
                         onClick={handlePlaceOrder}
                         disabled={
@@ -362,15 +363,16 @@ export default function Cart() {
                           (billingOption === true &&
                             !currentUser?.billingCompanyData)
                         }
-                        className="bg-teal-800 text-white py-2 px-4 rounded-lg mt-4 w-full"
+                        className="bg-teal-800 px-4 py-2 mt-4 w-full"
+                        variant="primary"
                       >
                         {isPlacingOrder
-                          ? "Se procesează..."
+                          ? "Se procese\u0103z\u0103..."
                           : "Trimite comanda"}
-                      </Button>
+                      </RippleButton>
                       {/*Validation of phone number and address*/}
                       {(!currentUser?.tel || !currentUser?.addressData) && (
-                        <p className="text-red-600 text-sm mt-2 text-center">
+                        <p className="text-red-800 text-sm font-bold mt-2 text-center">
                           Te rugăm să completezi numărul de telefon și adresa
                           pentru a putea finaliza comanda
                         </p>
@@ -386,12 +388,13 @@ export default function Cart() {
                     </>
                   ) : (
                     <Link to="/sign-in">
-                      <Button
+                      <RippleButton
                         type="submit"
-                        className="bg-teal-800 text-white py-2 px-4 rounded-lg mt-4 w-full"
+                        className="bg-teal-800 px-4 py-2 mt-4 w-full block"
+                        variant="primary"
                       >
-                        Loghează-te pentru a comanda
-                      </Button>
+                        Loghea\u0219ă-te pentru a comanda
+                      </RippleButton>
                     </Link>
                   )}
                 </div>

@@ -1,17 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { X, Heart } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useProduct } from "../contexts/ProductContext";
-import {
-  IconButton,
-  Dialog,
-  DialogBody,
-  DialogHeader,
-  Button,
-} from "@material-tailwind/react";
-
+import RippleButton from "./RippleButton";
 
 export default function ProductModal({ open, onClose, product }) {
   const { categories } = useCategory();
@@ -20,33 +13,64 @@ export default function ProductModal({ open, onClose, product }) {
   const { deleteProduct } = useProduct();
   const [cartLoading, setCartLoading] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false); // State for controlling fade-out animation
 
   const isFavorite = useMemo(
     () => product && favorites?.some((fav) => fav.id === product.id),
-    [favorites, product]
+    [favorites, product],
   );
 
-  if (!product) return null;
+  // Close modal with ESC
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    if (open) {
+      document.addEventListener("keydown", handleEsc);
+
+      // Get scrollbar width
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+
+      // Prevent layout shift
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+
+      document.body.style.overflow = "auto";
+      document.body.style.paddingRight = "0px";
+    };
+  }, [open]);
+
+   if (!product) return null;
 
   const category = categories.find((c) => Number(c.id) === product.type);
+
   const categoryLabel = category?.ro_short || category?.ro || "Fără categorie";
 
   // Handles adding the product to the cart
   const handleCartClick = async () => {
     setCartLoading(true);
+
     try {
-      await addToCart(product.id, product.mass, product.price); // Try adding product to cart
-      onClose(); // Close the modal after adding to cart
+      await addToCart(product.id, product.mass, product.price);
+
+      onClose();
     } catch (err) {
-      console.error("Error adding to cart:", err); // Log error if it occurs
+      console.error("Error adding to cart:", err);
     } finally {
-      setCartLoading(false); // Reset loading state
+      setCartLoading(false);
     }
   };
 
-  // Handles adding/removing the product from favorites
+  // Handles adding/removing favorites
   const handleFavoriteToggle = async () => {
     setFavoriteLoading(true);
+
     try {
       if (isFavorite) {
         await removeFromFavorites(product.id);
@@ -60,9 +84,10 @@ export default function ProductModal({ open, onClose, product }) {
     }
   };
 
-  // Handles deleting the product
+  // Handles deleting product
   const handleDeleteProduct = async (productId) => {
     setCartLoading(true);
+
     try {
       await deleteProduct(productId);
       onClose();
@@ -70,79 +95,110 @@ export default function ProductModal({ open, onClose, product }) {
       console.error("Error deleting product:", err);
     } finally {
       setCartLoading(false);
-    } };
+    }
+  };
 
   return (
-    <Dialog open={open} handler={onClose} aria-labelledby="modal-title">
-      <DialogHeader>
-        <IconButton
-          variant="text"
-          onClick={onClose}
-          className="!absolute top-2 right-2 text-teal-800"
-        >
-          <X />
-        </IconButton>
-      </DialogHeader>
-      <DialogBody className="flex flex-wrap ">
-        {/* Modal Content */}
-
-        <div className="w-full md:w-1/2 px-4 mb-8">
-          <div className="w-full h-64 flex justify-center items-center bg-white border rounded-md">
-            {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="object-contain h-full"
-              />
-            ) : (
-              <div className="text-gray-400 text-sm">Imagine indisponibilă</div>
-            )}
-          </div>
+    <div
+      className={`fixed inset-0 z-9999 flex items-center justify-center p-4 transition-all duration-500 ${
+        open ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+    >
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/50 backdrop-blur transition-opacity duration-500 ease-in-out ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {/* Modal */}
+      <div
+        className={`relative w-full md:w-3/4 lg:w-3/5 2xl:w-2/5 max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl transition-all duration-500 ease-in-out ${
+          open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        }`}
+      >
+        {/* Close Button */}
+        <div className="mb-8">
+          <RippleButton
+            onClick={onClose}
+            className="absolute! top-2 right-2 z-10 text-teal-800"
+            variant="icon"
+          >
+            <X />
+          </RippleButton>
         </div>
-        <div className="w-full md:w-1/2 px-4">
-          <h2 id="modal-title" className="text-2xl font-bold">
-            {product.name}
-          </h2>
-          <p className="text-sm">{categoryLabel}</p>
-          <p className="text-lg font-bold mb-4">{product.price} RON</p>
-          <p className="text-base">Descriere: </p>
-          <p className="text-sm mb-8">
-            {product.description ?? "Produsul momentan nu are descriere"}
-          </p>
-          <div className="flex flex-wrap gap-2 mb-4 items-center">
-            {product.quantity === 0 ? (
-              <span className="text-sm font-semibold text-red-600">Indisponibil</span>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleCartClick}
-                className="bg-teal-800 hover:bg-black"
+        {/* Content */}
+        <div className="flex flex-wrap p-6">
+          {/* Image */}
+          <div className="w-full md:w-1/2 px-2 mb-8">
+            <div className="w-full h-64 flex justify-center items-center bg-white border border-gray-300 rounded-xl overflow-hidden">
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="object-contain h-full w-full"
+                />
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  Imagine indisponibilă
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Product Info */}
+          <div className="w-full md:w-1/2 px-2">
+            <h2 className="text-2xl font-bold">{product.name}</h2>
+            <p className="text-sm text-gray-500 mb-2">{categoryLabel}</p>
+            <p className="text-2xl font-bold mb-4 text-teal-800">
+              {product.price} RON
+            </p>
+            <p className="text-base font-medium mb-1">Descriere:</p>
+            <p className="text-sm mb-8 text-gray-700">
+              {product.description ?? "Produsul momentan nu are descriere"}
+            </p>
+            {/* Buttons */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {product.quantity === 0 ? (
+                <span className="text-sm font-semibold text-red-600">
+                  Indisponibil
+                </span>
+              ) : (
+                <RippleButton
+                  disabled={cartLoading}
+                  onClick={handleCartClick}
+                  className="bg-teal-800 px-4 py-2 border border-teal-800"
+                  variant="primary"
+                >
+                  {cartLoading ? "Se adaugă..." : "Adaugă în coș"}
+                </RippleButton>
+              )}
+              <RippleButton
+                disabled={favoriteLoading}
+                onClick={handleFavoriteToggle}
+                className="px-5.5 py-2 flex items-center justify-center gap-2"
+                variant="secondary"
               >
-                Adaugă în coș
-              </Button>
-            )}
-            <Button
-              disabled={favoriteLoading}
-              size="sm"
-              variant="outlined"
-              onClick={handleFavoriteToggle}
-              className="flex items-center gap-2"
-            >
-              Favorite <Heart fill={isFavorite ? "red" : "none"} />
-            </Button>
-            {isAdmin && (
-            <Button
-              disabled={cartLoading}
-              size="sm"
-              onClick={() => handleDeleteProduct(product.id)}
-              className="bg-red-600 hover:bg-black"
-            >
-              Șterge produs
-            </Button>
-            )}
+                Favorite
+                <Heart
+                  size={18}
+                  fill={isFavorite ? "red" : "none"}
+                  color={isFavorite ? "red" : "currentColor"}
+                />
+              </RippleButton>
+              {/*{isAdmin && (
+                <RippleButton
+                  disabled={cartLoading}
+                  onClick={() => handleDeleteProduct(product.id)}
+                  className="px-4 py-2 text-sm rounded-lg text-white"
+                  variant="danger"
+                >
+                  Șterge produs
+                </RippleButton>
+              )}*/}
+            </div>
           </div>
         </div>
-      </DialogBody>
-    </Dialog>
+      </div>
+    </div>
   );
 }

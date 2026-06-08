@@ -2,13 +2,8 @@ import React, { useState } from "react";
 import { X, ShoppingCart } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
 import { useCategory } from "../contexts/CategoryContext";
-import {
-  IconButton,
-  Card,
-  CardHeader,
-  CardBody,
-} from "@material-tailwind/react";
 import ProductModal from "./ProductModal";
+import RippleButton from "./RippleButton";
 
 export default function ProductCard({ product }) {
   const [open, setOpen] = useState(false); // State for controlling modal visibility
@@ -47,15 +42,15 @@ export default function ProductCard({ product }) {
   return (
     <>
       {/* Product Card */}
-      <Card
-        className="bg-white/40 backdrop-blur-2xl backdrop-saturate-200 px-4 py-2 border border-white/20 cursor-pointer lg:w-64 w-44 h-full flex flex-col group"
+      <div
+        className="bg-white/40 backdrop-blur-2xl backdrop-saturate-200 px-4 py-2 border border-white/20 rounded-xl cursor-pointer lg:w-64 w-44 h-full flex flex-col group"
         onClick={handleOpen}
         role="button"
         tabIndex={0}
       >
         {/* Product Image */}
-        <CardHeader className="lg:h-48 h-32 flex justify-center flex-shrink-0">
-           <div className="w-full flex justify-center items-center bg-white border rounded-md">
+        <div className="relative bg-clip-border mx-4 rounded-xl overflow-hidden bg-white text-gray-700 shadow-lg -mt-6 lg:h-48 h-32 flex justify-center shrink-0">
+          <div className="w-full flex justify-center items-center bg-white border border-white/20 rounded-xl">
             {product.imageUrl ? (
               <img
                 src={product.imageUrl}
@@ -66,42 +61,45 @@ export default function ProductCard({ product }) {
               <div className="text-gray-400 text-sm">Imagine indisponibilă</div>
             )}
           </div>
-        </CardHeader>
+        </div>
 
         {/* Product Details */}
-        <CardBody className="relative flex-1 flex flex-col lg:h-56 h-48 justify-between">
+        <div className="relative flex-1 flex flex-col lg:h-56 h-48 p-6 justify-between">
           <h1 className="text-xl font-bold leading-tight text-gray-900 line-clamp-2">
             {product.name}
           </h1>
           <div className="space-y-1">
-            <p className="text-gray-800 text-sm">{categoryLabel}</p>
-            <p className="text-gray-800 text-sm">{product.mass || "-"}</p>
-            <p className="text-teal-800 font-extrabold">{product.price} RON</p>
+            <p className="text-gray-800">{product.mass || "-"}</p>
+            <p className="text-green-100 font-extrabold">{product.price} RON</p>
           </div>
 
           {/* Add to Cart Button */}
-          <IconButton
+          <RippleButton
             disabled={product.quantity === 0 || loadingId === product.id}
             onClick={createCartClickHandler(product)}
-            className={`!absolute bottom-2 right-2 
-              ${
-                product.quantity === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-green-100 hover:bg-teal-600"
-              }
-            `}
+            className={`absolute! bottom-2 right-2 ${
+              product.quantity === 0
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-green-100 hover:bg-teal-600"
+            }`}
+            variant="icon"
           >
             <ShoppingCart
               className={`${
                 product.quantity === 0 ? "text-gray-500" : "text-teal-800"
               }`}
             />
-          </IconButton>
-        </CardBody>
-      </Card>
+          </RippleButton>
+        </div>
+      </div>
 
       {/* Product Details Modal */}
-      <ProductModal key={`modal-${product.id}`} open={open} onClose={closeModal} product={product} />
+      <ProductModal
+        key={`modal-${product.id}`}
+        open={open}
+        onClose={closeModal}
+        product={product}
+      />
     </>
   );
 }

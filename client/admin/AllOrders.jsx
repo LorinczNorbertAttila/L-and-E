@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import Header from "../src/components/Header";
 import { format, subMonths, isAfter } from "date-fns";
 import { ro } from "date-fns/locale";
-import { Collapse, IconButton } from "@material-tailwind/react";
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
+import RippleButton from "../src/components/RippleButton";
 
 // Filter options for the orders
 const FILTERS = {
@@ -23,6 +23,7 @@ const STATUS_OPTIONS = [
 
 //Order card
 function OrderCard({ order, expanded, toggleExpand }) {
+  const isOpen = expanded === order.id;
   const [status, setStatus] = useState(order.status || "");
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -42,7 +43,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ status }),
-        }
+        },
       );
       const result = await res.json();
       if (result.success) {
@@ -76,7 +77,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
       >
         <div>
           <h3 className="flex flex-col md:flex-row md:gap-1 font-semibold">
-            <span>Comandă:</span>
+            <span>Comandă: #{order.id}</span>
             <span>{formattedDate}</span>
           </h3>
           <div className="flex flex-col gap-2 mt-2">
@@ -98,14 +99,14 @@ function OrderCard({ order, expanded, toggleExpand }) {
               </select>
 
               <div className="flex items-center gap-2">
-                <button
+                <RippleButton
                   onClick={handleSaveStatus}
                   disabled={saving}
-                  className="bg-teal-600 text-white p-2 rounded hover:bg-teal-700 disabled:opacity-50"
-                  title="Salvează status"
+                  className="text-white p-2 rounded"
+                  variant="primary"
                 >
                   <Check className="w-4 h-4" />
-                </button>
+                </RippleButton>
                 {successMsg && (
                   <span className="text-green-600 text-xs">{successMsg}</span>
                 )}
@@ -121,45 +122,55 @@ function OrderCard({ order, expanded, toggleExpand }) {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-teal-800 font-bold">{order.total} RON</span>
-          <IconButton
+          <span
             aria-expanded={expanded === order.id}
-            size="sm"
-            variant="text"
-            color="teal"
-            ripple={false}
             onClick={(e) => {
               e.stopPropagation();
               toggleExpand(order.id);
             }}
+            className="text-teal-800"
           >
-            {expanded === order.id ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </IconButton>
+            <ChevronDown
+              className={`h-5 w-5 transition-transform duration-400 ease-in-out ${
+                expanded === order.id ? "-rotate-180" : "rotate-0"
+              }`}
+            />
+          </span>
         </div>
       </div>
       {/* Collapsible section for order items and user details */}
-      <Collapse open={expanded === order.id}>
+      <div
+        className={`overflow-hidden transition-all duration-400 ease-in-out ${
+          isOpen ? "max-h-screen" : "max-h-0"
+        }`}
+      >
         <div className="px-4 pb-4 space-y-4">
           {/* User details */}
           <div className="bg-gray-50 rounded-md p-3 mb-2">
             <div className="font-semibold mb-1">Datele clientului</div>
             <div className="text-sm">
               <div>
-                <span className="font-medium">Nume:</span> {user.name}{" "}
-                {user.lname}
+                <span className="font-medium">Nume:</span> {order.userName}
               </div>
               <div>
                 <span className="font-medium">Email:</span> {user.email}
               </div>
               <div>
-                <span className="font-medium">Telefon:</span> {user.tel || "-"}
+                <span className="font-medium">Telefon:</span>{" "}
+                {order.phoneNumber || "-"}
               </div>
               <div>
                 <span className="font-medium">Adresă:</span>{" "}
-                {user.address || "-"}
+                {`${order.addressData?.address}, ${order.addressData?.city}, jud. ${order.addressData?.county}${order.addressData?.postalCode}`}
+              </div>
+              <div>
+                <span className="font-medium">Facturare:</span>{" "}
+                {order.billing ? "Persoană juridică" : "Persoană fizică"}
+                {order.billing && (
+                  <div>
+                    {`${order.billingCompanyData.name}, ${order.billingCompanyData.cui}, ${order.billingCompanyData.nrRegCom}, ${order.billingCompanyData.address}, ${order.billingCompanyData.city}, jud. ${order.billingCompanyData.county}`}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -193,7 +204,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
               </div>
             ))}
         </div>
-      </Collapse>
+      </div>
     </div>
   );
 }
@@ -215,7 +226,7 @@ export default function AllOrders() {
         const res = await fetch(
           `${
             import.meta.env.VITE_API_URL
-          }/api/orders?page=${currentPage}&limit=10&filter=${filter}`
+          }/api/orders?page=${currentPage}&limit=10&filter=${filter}`,
         );
         const data = await res.json();
         if (data.success) {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Facebook, Clock, Phone, MailOpen, MapPinned } from "lucide-react";
+import { Clock, Phone, MailOpen, MapPinned } from "lucide-react";
 import logoWhite from "../assets/images/lande_white.png";
 
 const WORKING_HOURS = {
@@ -11,7 +11,7 @@ const WORKING_HOURS = {
 export default function Footer() {
   return (
     <footer className="bg-black">
-      <div className="bg-teal-900 bg-opacity-55 flex flex-col md:flex-row items-center justify-between p-4 gap-6 md:gap-10">
+      <div className="bg-teal-900/45 flex flex-col md:flex-row items-center justify-between p-4 gap-6 md:gap-10">
         <img src={logoWhite} className="w-20 h-20 md:w-24 md:h-24" alt="Logo" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
@@ -40,7 +40,11 @@ export default function Footer() {
                 className="text-white cursor-pointer"
                 aria-label="Open Facebook page"
               >
-                <Facebook aria-hidden="true" />
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png"
+                  alt="facebook"
+                  className="h-6 w-6"
+                />
               </a>
               <a
                 href="https://www.google.com/maps/place/Fitofarmacie+L%26E+AgroTeam+srl/@47.0328083,23.9118688,17z/data=!3m1!4b1!4m6!3m5!1s0x4749bd6fb2248211:0xadfe2fd24dd28334!8m2!3d47.0328083!4d23.9118688!16s%2Fg%2F11f6165fjn?entry=ttu&g_ep=EgoyMDI1MDMxOS4yIKXMDSoASAFQAw%3D%3D"

@@ -3,8 +3,8 @@ import Header from "../src/components/Header";
 import { useAuth } from "../src/contexts/AuthContext";
 import { format, subMonths, isAfter } from "date-fns";
 import { ro } from "date-fns/locale";
-import { Collapse, IconButton } from "@material-tailwind/react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import RippleButton from "../src/components/RippleButton";
 
 // Filter options for the orders
 const FILTERS = {
@@ -15,6 +15,7 @@ const FILTERS = {
 
 //Order card
 function OrderCard({ order, expanded, toggleExpand }) {
+  const isOpen = expanded === order.orderId;
   // Format the order date for display
   const formattedDate = useMemo(() => {
     return format(new Date(order.createdAt), "dd MMM yyyy HH:mm", {
@@ -23,7 +24,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
   }, [order.createdAt]);
 
   return (
-    <div className="bg-white/90 shadow-md rounded-xl text-gray-700 transition-all duration-300">
+    <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 shadow-md rounded-xl text-gray-900">
       {/* Order header with clickable area to expand/collapse details */}
       <div
         role="button"
@@ -42,31 +43,32 @@ function OrderCard({ order, expanded, toggleExpand }) {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-teal-800 font-bold">{order.total} RON</span>
-          <IconButton
+          <span className="text-green-100 font-bold">{order.total} RON</span>
+          <span
             aria-expanded={expanded === order.orderId}
-            size="sm"
-            variant="text"
-            color="teal"
-            ripple={false}
             onClick={(e) => {
               e.stopPropagation();
               toggleExpand(order.orderId);
             }}
+            className="text-green-100"
           >
-            {expanded === order.orderId ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </IconButton>
+            <ChevronDown
+              className={`h-5 w-5 transition-transform duration-400 ease-in-out ${
+                expanded === order.orderId ? "-rotate-180" : "rotate-0"
+              }`}
+            />
+          </span>
         </div>
       </div>
       {/* Collapsible section for order items */}
-      <Collapse open={expanded === order.orderId}>
+      <div
+        className={`overflow-hidden transition-all duration-400 ease-in-out ${
+          isOpen ? "max-h-screen" : "max-h-0"
+        }`}
+      >
         <div className="px-4 pb-4 space-y-4">
           <div className="flex justify-between items-center gap-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-800">
               Metoda de plată:{" "}
               {order.payingOption === "card" ? "Card bancar" : "Ramburs"}
             </div>
@@ -125,7 +127,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
             </div>
           </div>
         </div>
-      </Collapse>
+      </div>
     </div>
   );
 }
@@ -176,7 +178,7 @@ export default function Orders() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="bg-white text-gray-800 border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="bg-white text-gray-800 border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-hidden focus:ring-2 focus:ring-teal-500"
             >
               <option value={FILTERS.THREE_MONTHS}>Ultimele 3 luni</option>
               <option value={FILTERS.SIX_MONTHS}>Ultimele 6 luni</option>

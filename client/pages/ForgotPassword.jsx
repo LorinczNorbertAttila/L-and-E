@@ -1,9 +1,9 @@
 import React, { useRef, useState } from "react";
 import { useAuth } from "../src/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Alert } from "@material-tailwind/react";
 import logoWhite from "../src/assets/images/lande_white.png";
 import CustomAlert from "../src/components/CustomAlert";
+import RippleButton from "../src/components/RippleButton";
 
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,7 +51,7 @@ export default function ForgotPassword() {
       </Link>
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <form onSubmit={handleSubmit}>
-          <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-teal-800 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-green-600 to-teal-800 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
           <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
             <div className="max-w-md mx-auto">
               <div>
@@ -67,7 +67,7 @@ export default function ForgotPassword() {
                       ref={emailRef}
                       required
                       onChange={() => setError("")}
-                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-green-600"
+                      className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-hidden focus:border-green-600"
                       placeholder="Email"
                     />
                     <label
@@ -78,14 +78,14 @@ export default function ForgotPassword() {
                     </label>
                   </div>
                   <div className="relative">
-                    <Button
-                      size="sm"
+                    <RippleButton
+                      variant="primary"
                       disabled={loading}
                       type="submit"
-                      className="bg-teal-800 text-white"
+                      className="bg-teal-800 px-4 py-2"
                     >
                       Continuă
-                    </Button>
+                    </RippleButton>
                   </div>
                   {error && <span className="text-red-600">{error}</span>}
                   {/* Display error message if there is one */}

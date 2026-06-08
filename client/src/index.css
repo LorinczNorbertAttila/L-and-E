@@ -1,3 +1,63 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@config '../tailwind.config.js';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+  html {
+    font-family: Roboto, sans-serif;
+  }
+}
+
+/* Ripple Effect Animation */
+@keyframes ripple-effect {
+  0% {
+    transform: scale(0);
+    opacity: var(--ripple-opacity-start, 1);
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Ripple button container - enables positioning context for ripples */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Individual ripple element */
+.ripple {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  left: calc(var(--ripple-x) - 10px);
+  top: calc(var(--ripple-y) - 10px);
+  background-color: var(--ripple-color, rgba(255, 255, 255, 0.5));
+  animation: ripple-effect var(--ripple-duration, 600ms) ease-out;
+}
+
+/* Respect prefers-reduced-motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .ripple {
+    animation: none;
+  }
+}
+

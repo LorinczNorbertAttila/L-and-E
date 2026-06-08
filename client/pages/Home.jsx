@@ -138,7 +138,7 @@ export default function Home() {
                 id="search-input"
                 type="text"
                 aria-label="Căutare produse"
-                className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-hidden transition-all duration-300 ease-in-out w-12 focus:w-64"
+                className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-hidden transition-all duration-400 ease-in-out w-12 focus:w-64"
                 placeholder="Căutare..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

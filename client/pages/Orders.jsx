@@ -24,7 +24,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
   }, [order.createdAt]);
 
   return (
-    <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 shadow-md rounded-xl text-gray-900">
+    <div className="bg-white/50 backdrop-blur-2xl backdrop-saturate-200 border border-white/20 shadow-md rounded-xl text-gray-900 transition-all duration-400">
       {/* Order header with clickable area to expand/collapse details */}
       <div
         role="button"

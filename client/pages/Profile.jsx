@@ -168,7 +168,7 @@ export default function Profile() {
 
       {/*Image Modal*/}
       <div
-        className={`fixed inset-0 z-9999 flex items-center justify-center p-4 transition-all duration-500 ${
+        className={`fixed inset-0 z-9999 flex items-center justify-center p-4 transition-all duration-400 ${
           showImageModal ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
@@ -179,13 +179,13 @@ export default function Profile() {
             setSelectedImage(null);
             setShowImageModal(false);
           }}
-          className={`absolute inset-0 bg-black/50 backdrop-blur transition-opacity duration-500 ease-in-out ${
+          className={`absolute inset-0 bg-black/50 backdrop-blur transition-opacity duration-400 ease-in-out ${
             showImageModal ? "opacity-100" : "opacity-0"
           }`}
         />
         {/* Modal */}
         <div
-          className={`relative w-full md:w-3/4 lg:w-3/5 2xl:w-2/5 max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl transition-all duration-500 ease-in-out ${
+          className={`relative w-full md:w-3/4 lg:w-3/5 max-w-xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl transition-all duration-400 ease-in-out ${
             showImageModal
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-4"

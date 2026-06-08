@@ -66,7 +66,7 @@ function OrderCard({ order, expanded, toggleExpand }) {
   const user = order.user || {};
 
   return (
-    <div className="bg-white/90 shadow-md rounded-xl text-gray-700 transition-all duration-300">
+    <div className="bg-white/90 shadow-md rounded-xl text-gray-700 transition-all duration-400">
       {/* Order header with clickable area to expand/collapse details */}
       <div
         role="button"

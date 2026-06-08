@@ -5,7 +5,7 @@ import { CircleCheckBig, CircleAlert } from "lucide-react";
 export default function CustomAlert({ error, message, open }) {
   return ReactDOM.createPortal(
     <div
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-9999 w-full max-w-fit px-4 transition-all duration-300 ease-in-out ${
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-9999 w-full max-w-fit px-4 transition-all duration-400 ease-in-out ${
         open
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 -translate-y-4 pointer-events-none"

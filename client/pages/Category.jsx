@@ -112,7 +112,7 @@ const FilterDrawer = React.memo(function FilterDrawer({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/50 backdrop-blur z-50 transition-opacity duration-500 ease-in-out ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur z-50 transition-opacity duration-400 ease-in-out ${
           open
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -120,7 +120,7 @@ const FilterDrawer = React.memo(function FilterDrawer({
       />
       <div
         placement="left"
-        className={`fixed top-0 left-0 h-full w-72 z-50 p-6 bg-white/80 backdrop-blur-2xl backdrop-saturate-200 border-r border-white/80 shadow-xl transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full w-72 z-50 p-6 bg-white/80 backdrop-blur-2xl backdrop-saturate-200 border-r border-white/80 shadow-xl transition-transform duration-400 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

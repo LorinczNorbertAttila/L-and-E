@@ -254,7 +254,7 @@ export default function CartProvider({ children }) {
       {/* Backdrop */}
       <div
         onClick={closeModal}
-        className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur transition-opacity duration-500 ease-in-out ${
+        className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur transition-opacity duration-400 ease-in-out ${
           isOutOfStock
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -263,7 +263,7 @@ export default function CartProvider({ children }) {
         {/* Modal */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className={`relative w-full sm:max-w-xl max-w-[90%] max-h-[90vh] overflow-y-auto rounded-xl bg-white text-slate-500 shadow-2xl transition-all duration-300 ease-in-out ${
+          className={`relative w-full sm:max-w-lg max-w-[90%] max-h-[90vh] overflow-y-auto rounded-xl bg-white text-slate-500 shadow-2xl transition-all duration-400 ease-in-out ${
             isOutOfStock
               ? "opacity-100 translate-y-0"
               : "opacity-0 -translate-y-4"

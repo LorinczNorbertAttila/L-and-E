@@ -9,7 +9,13 @@ import RippleButton from "./RippleButton";
 export default function ProductModal({ open, onClose, product }) {
   const { categories } = useCategory();
   const { addToCart } = useCart();
-  const { favorites, addToFavorites, removeFromFavorites, isAdmin } = useAuth();
+  const {
+    favorites,
+    addToFavorites,
+    removeFromFavorites,
+    isAdmin,
+    currentUser,
+  } = useAuth();
   const { deleteProduct } = useProduct();
   const [cartLoading, setCartLoading] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -46,7 +52,7 @@ export default function ProductModal({ open, onClose, product }) {
     };
   }, [open]);
 
-   if (!product) return null;
+  if (!product) return null;
 
   const category = categories.find((c) => Number(c.id) === product.type);
 
@@ -172,29 +178,32 @@ export default function ProductModal({ open, onClose, product }) {
                   {cartLoading ? "Se adaugă..." : "Adaugă în coș"}
                 </RippleButton>
               )}
-              <RippleButton
-                disabled={favoriteLoading}
-                onClick={handleFavoriteToggle}
-                className="px-5.5 py-2 flex items-center justify-center gap-2"
-                variant="secondary"
-              >
-                Favorite
-                <Heart
-                  size={18}
-                  fill={isFavorite ? "red" : "none"}
-                  color={isFavorite ? "red" : "currentColor"}
-                />
-              </RippleButton>
-              {/*{isAdmin && (
+              {currentUser && (
+                <RippleButton
+                  disabled={favoriteLoading}
+                  onClick={handleFavoriteToggle}
+                  className="px-5.5 py-2 flex items-center justify-center gap-2"
+                  variant="secondary"
+                >
+                  Favorite
+                  <Heart
+                    size={18}
+                    fill={isFavorite ? "red" : "none"}
+                    color={isFavorite ? "red" : "currentColor"}
+                  />
+                </RippleButton>
+              )}
+              
+              {isAdmin && (
                 <RippleButton
                   disabled={cartLoading}
                   onClick={() => handleDeleteProduct(product.id)}
-                  className="px-4 py-2 text-sm rounded-lg text-white"
-                  variant="danger"
+                  className="bg-red-600 px-4 py-2 hover:bg-red-300"
+                  variant="primary"
                 >
                   Șterge produs
                 </RippleButton>
-              )}*/}
+              )}
             </div>
           </div>
         </div>

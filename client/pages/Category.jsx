@@ -5,7 +5,6 @@ import Footer from "../src/components/Footer";
 import {
   X,
   User,
-  Search,
   ListFilter,
   ArrowUpDown,
   ChevronLeft,
@@ -18,16 +17,7 @@ import { useProduct } from "../src/contexts/ProductContext";
 import { useCategory } from "../src/contexts/CategoryContext";
 import CategoryGrid from "../src/components/CategoryGrid";
 import RippleButton from "../src/components/RippleButton";
-
-// Debounce hook for search input
-function useDebouncedValue(value, delay) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debounced;
-}
+import ProductSearch from "../src/components/ProductSearch";
 
 const FilterDrawer = React.memo(function FilterDrawer({
   open,
@@ -228,14 +218,10 @@ export default function Category() {
   const [selectedMasses, setSelectedMasses] = useState([]);
   const [showInStockOnly, setShowInStockOnly] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 0]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortType, setSortType] = useState("default");
 
   const ITEMS_PER_PAGE = 20;
-
-  // Debounced search term for better UX
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
 
   // Filter products based on the category
   const filtered = useMemo(
@@ -281,7 +267,7 @@ export default function Category() {
     setPriceRange([minPrice, maxPrice]);
   }, [minPrice, maxPrice]);
 
-  // Apply all filters (mass, stock, price, search)
+  // Apply all filters (mass, stock, price)
   const filteredProducts = useMemo(() => {
     let result = [...filtered];
     // Filter by selected masses
@@ -293,11 +279,6 @@ export default function Category() {
     result = result.filter(
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
     );
-    // Filter by debounced search term
-    const term = debouncedSearchTerm.trim().toLowerCase();
-    if (term) {
-      result = result.filter((p) => p.name.toLowerCase().includes(term));
-    }
 
     // Apply sorting
     if (sortType === "name-asc") {
@@ -311,19 +292,12 @@ export default function Category() {
     }
 
     return result;
-  }, [
-    filtered,
-    selectedMasses,
-    showInStockOnly,
-    priceRange,
-    debouncedSearchTerm,
-    sortType,
-  ]);
+  }, [filtered, selectedMasses, showInStockOnly, priceRange, sortType]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedMasses, showInStockOnly, priceRange, debouncedSearchTerm]);
+  }, [selectedMasses, showInStockOnly, priceRange]);
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -344,19 +318,7 @@ export default function Category() {
             Despre noi
           </Link>
           <div className="ml-auto flex gap-4 justify-center items-center">
-            <div className="relative justify-center items-center">
-              <input
-                id="search-input"
-                type="text"
-                aria-label="Căutare produse"
-                className="bg-white h-10 px-5 pr-10 rounded-full text-sm focus:outline-hidden transition-all duration-300 ease-in-out w-12 focus:w-64"
-                placeholder="Căutare..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="text-teal-800 h-5 absolute right-0 top-0 mt-2.5 mr-4 pointer-events-none" />
-            </div>
-
+            <ProductSearch />
             {!currentUser && (
               <Link to="/sign-up">
                 <li className="hover:underline text-white flex items-center gap-1">

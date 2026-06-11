@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { X, ChevronDown } from "lucide-react";
 import CustomAlert from "./CustomAlert";
-import countiesData from "../assets/json/countiesList.json";
+import countiesData from "../assets/json/judete.json";
 import RippleButton from "./RippleButton";
+import LocationSelector from "./LocationSelector";
 
 const ERROR_MESSAGES = {
   selectCounty: "Vă rugăm să selectați un județ!",
@@ -17,38 +18,6 @@ const ERROR_MESSAGES = {
     "Numărul de înregistrare la Registrul Comerțului nu poate fi gol.",
 };
 
-function LocationSelector({
-  label,
-  options,
-  value,
-  onChange,
-  error,
-  disabled,
-}) {
-  const selectId = `select-${label.toLowerCase().replace(/\s+/g, "-")}`;
-  return (
-    <div className="w-full sm:w-1/2 sm:pr-2">
-      <label htmlFor={selectId} className="mt-2 px-2">
-        {label}
-      </label>
-      <select
-        id={selectId}
-        onChange={onChange}
-        value={value}
-        className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600"
-        disabled={disabled}
-      >
-        {options.map((option, index) => (
-          <option key={`${option.value}-${index}`} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
-    </div>
-  );
-}
-
 export default function BillingModal({
   open,
   onClose,
@@ -62,7 +31,7 @@ export default function BillingModal({
   const [cui, setCui] = useState("");
   const [nrRegCom, setNrRegCom] = useState("");
   const [selectedCounty, setSelectedCounty] = useState("");
-  const [city, setCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
   const [address, setAddress] = useState("");
   const [companyNameError, setCompanyNameError] = useState("");
   const [cuiError, setCuiError] = useState("");
@@ -74,13 +43,27 @@ export default function BillingModal({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  // Generate county options
+  // Generate county and city options
   const countyOptions = useMemo(() => {
-    return countiesData.map((county) => ({
+    return countiesData.judete.map((county) => ({
       label: county.nume,
       value: county.nume,
+      cities: county.localitati.map((city) => ({
+        label: city.nume,
+        value: city.nume,
+      })),
     }));
   }, []);
+
+  const [cityOptions, setCityOptions] = useState([]);
+
+  useEffect(() => {
+    // If the county changes, update the cities
+    if (selectedCounty) {
+      const county = countyOptions.find((c) => c.value === selectedCounty);
+      setCityOptions(county ? county.cities : []);
+    }
+  }, [selectedCounty, countyOptions]);
 
   // Load saved data when modal opens
   useEffect(() => {
@@ -89,7 +72,7 @@ export default function BillingModal({
       setCui(currentUser?.billingCompanyData?.cui || "");
       setNrRegCom(currentUser?.billingCompanyData?.nrRegCom || "");
       setSelectedCounty(currentUser?.billingCompanyData?.county || "");
-      setCity(currentUser?.billingCompanyData?.city || "");
+      setSelectedCity(currentUser?.billingCompanyData?.city || "");
       setAddress(currentUser?.billingCompanyData?.address || "");
     }
   }, [open, currentUser?.billingCompanyData]);
@@ -99,7 +82,7 @@ export default function BillingModal({
     setCui("");
     setNrRegCom("");
     setSelectedCounty("");
-    setCity("");
+    setSelectedCity("");
     setAddress("");
     setCompanyNameError("");
     setCuiError("");
@@ -138,7 +121,7 @@ export default function BillingModal({
       setCountyError(ERROR_MESSAGES.selectCounty);
       return;
     }
-    if (!city.trim()) {
+    if (!selectedCity) {
       setCityError(ERROR_MESSAGES.selectCity);
       return;
     }
@@ -161,7 +144,7 @@ export default function BillingModal({
         cui: cui.trim(),
         nrRegCom: nrRegCom.trim(),
         county: selectedCounty,
-        city: city.trim(),
+        city: selectedCity,
         address: address.trim(),
       };
 
@@ -318,25 +301,14 @@ export default function BillingModal({
                 onChange={(e) => setSelectedCounty(e.target.value)}
                 error={countyError}
               />
-              <div className="w-full sm:w-1/2 sm:pr-2 relative">
-                <label htmlFor="city" className="mt-2 px-2">
-                  Localitate
-                </label>
-                <input
-                  autoComplete="off"
-                  id="city"
-                  name="city"
-                  type="text"
-                  required
-                  className="h-10 w-full text-sm rounded-lg border-2 border-gray-300 text-slate-700 focus:outline-hidden focus:border-green-600 disabled:cursor-not-allowed disabled:bg-gray-100 p-3"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  disabled={!selectedCounty}
-                />
-                {cityError && (
-                  <p className="text-red-600 text-sm mt-1">{cityError}</p>
-                )}
-              </div>
+              <LocationSelector
+                label="Oraș"
+                options={cityOptions}
+                value={selectedCity}
+                onChange={setSelectedCity}
+                disabled={!selectedCounty}
+                error={cityError}
+              />
             </div>
             <label htmlFor="address" className="mt-2 px-2">
               Adresă

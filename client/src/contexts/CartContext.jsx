@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { auth, onAuthStateChanged } from "../firebase/firebase.js";
 import { X } from "lucide-react";
 import RippleButton from "../components/RippleButton.jsx";
+import CartDrawer from "../components/CartDrawer.jsx";
 
 // Create a context for the cart
 const CartContext = React.createContext();
@@ -11,7 +12,8 @@ export const useCart = () => useContext(CartContext);
 
 export default function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
-  const [isOutOfStock, setIsOutOfStock] = useState(false);
+  const [isOutOfStock, setIsOutOfStock] = useState(false); //State for controlling the out of stock modal
+  const [openCartDrawer, setOpenCartDrawer] = useState(false); //State for controlling cart drawer visibility
 
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -85,6 +87,7 @@ export default function CartProvider({ children }) {
           console.error("AddToCart error:", result.message);
         } else if (result.cart) {
           setCart(result.cart); // Refresh cart from server
+          setOpenCartDrawer(true); //Show cart drawer
         }
       } catch (err) {
         console.error("API error:", err);
@@ -236,6 +239,10 @@ export default function CartProvider({ children }) {
   // Close the out-of-stock modal
   const closeModal = () => setIsOutOfStock(false);
 
+  //Close cart drawer
+  const handleCartDrawerClose = () => setOpenCartDrawer(false);
+
+
   return (
     <>
       <CartContext.Provider
@@ -284,6 +291,13 @@ export default function CartProvider({ children }) {
           </div>
         </div>
       </div>
+
+       {/* Cart modal */}
+      <CartDrawer
+        open={openCartDrawer}
+        onClose={handleCartDrawerClose}
+        cart={cart}
+      />
     </>
   );
 }

@@ -22,11 +22,11 @@ import AllOrders from "../admin/AllOrders";
 
 export default function App() {
   return (
-    <CategoryProvider>
-      <CartProvider>
-        <AuthProvider>
-          <ProductProvider>
-            <BrowserRouter>
+    <BrowserRouter>
+      <CategoryProvider>
+        <CartProvider>
+          <AuthProvider>
+            <ProductProvider>
               {/*Routes */}
               <Routes>
                 <Route
@@ -139,10 +139,10 @@ export default function App() {
                   />
                 </Route>
               </Routes>
-            </BrowserRouter>
-          </ProductProvider>
-        </AuthProvider>
-      </CartProvider>
-    </CategoryProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </CartProvider>
+      </CategoryProvider>
+    </BrowserRouter>
   );
 }
